@@ -57,9 +57,12 @@ class GoalsTests(unittest.TestCase):
         run('fmt', str(self.repo)); first = (self.repo / 'goals.json').read_bytes()
         run('fmt', str(self.repo)); self.assertEqual(first, (self.repo / 'goals.json').read_bytes())
 
-    def test_next_prefers_unverified_and_respects_dependencies(self):
+    def test_next_orders_by_priority_then_status_and_respects_dependencies(self):
         run('fmt', str(self.repo))
-        self.assertTrue(run('next', str(self.repo)).stdout.startswith('TASK-002'))  # unverified before unmet
+        self.assertTrue(run('next', str(self.repo)).stdout.startswith('TASK-002'))  # GOAL-1 priority 1 first
+        d = self.data(); d['goals'][0]['priority'] = 9   # demote the unverified goal below GOAL-4 (priority 4)
+        (self.repo / 'goals.json').write_text(json.dumps(d))
+        self.assertTrue(run('next', str(self.repo)).stdout.startswith('TASK-001'))  # priority beats status
         picks = json.loads(run('next', str(self.repo), '--json').stdout)
         self.assertNotIn('TASK-003', [p['task']['id'] for p in picks])  # GOAL-5 waits for GOAL-4
 

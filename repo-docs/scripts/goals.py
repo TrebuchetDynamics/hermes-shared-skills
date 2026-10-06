@@ -25,7 +25,8 @@ TASK_STATUS = ('open', 'in_progress', 'done')
 SECTIONS = ('Now', 'Next', 'Needs decision', 'Done')
 KINDS = ('executed', 'inspection')
 RESULTS = ('pass', 'fail')
-# Lower rank = picked first. Unverified/partial (prove or finish what exists) before unmet (new work).
+# Order: section (Now before Next), then goal priority (the product's stated order), then status as a
+# tie-break: unverified/partial (prove or finish what exists) before unmet (new work).
 STATUS_RANK = {'unverified': 0, 'partial': 1, 'unmet': 2, 'met': 3}
 SECTION_RANK = {'Now': 0, 'Next': 1}
 BEGIN, END = '<!-- goals:coverage:begin -->', '<!-- goals:coverage:end -->'
@@ -131,7 +132,7 @@ def eligible(data):
             continue
         if any(goals.get(d, {}).get('status') != 'met' for d in g['depends_on']):
             continue
-        out.append((SECTION_RANK[t['section']], STATUS_RANK[g['status']], g['priority'], t['id'], t, g))
+        out.append((SECTION_RANK[t['section']], g['priority'], STATUS_RANK[g['status']], t['id'], t, g))
     return [(t, g) for *_, t, g in sorted(out, key=lambda r: r[:4])]
 
 
