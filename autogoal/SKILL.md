@@ -148,7 +148,8 @@ Use /autogoal or an explicit request to choose useful project work autonomously.
 2. **Select.** Run `python ~/.hermes/shared-skills/repo-docs/scripts/goals.py next <repo> --json`
    and take the first eligible task not claimed by a live owner (Operating priority 2). Load
    `references/discovery.md` only when that returns nothing, the repo has no `goals.json`, or
-   the profile has no `repo-docs` cron job.
+   the profile has no `repo-docs` cron job. If it returned a task, do not load discovery.md
+   to double-check it.
 3. **Hand off.** Load `references/handoff.md`. Write the contract file with every field:
    `Objective`, `Scope`, `Verification`, `Source`, `Project payoff`, `Current evidence`,
    `Expected change`, `Acceptance`, `Stop conditions`, `Repo-docs pass`. Build it from the
@@ -160,7 +161,7 @@ Use /autogoal or an explicit request to choose useful project work autonomously.
 
 References (load only when step 1–3 says so): `references/discovery.md`,
 `references/handoff.md`, `references/blockers-and-history.md`, `references/maintenance.md`
-(skill maintenance only), `references/upstream-goal-selection.md` (background).
+(skill maintenance only; never in a scheduled run), `references/upstream-goal-selection.md` (background).
 
 ## Output contract
 

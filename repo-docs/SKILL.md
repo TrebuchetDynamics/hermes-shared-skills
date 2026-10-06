@@ -328,7 +328,9 @@ only through `<this-skill-directory>/scripts/goals.py`, or write it and then run
    least one bounded open task: the smallest next slice that fits one autogoal
    worker run (about 50 turns). For an `unverified` goal, the task is "run or add
    the end-to-end check that proves it". Split large goals into ordered slices
-   with `depends_on`. Tasks record `id`, `goal`, `title`, `status`
+   with `depends_on`, and keep **two** open slices queued for any goal with remaining work
+   (the next in `Now`, the one after in `Next`). Workers then never drain a goal's queue
+   between runs, which otherwise makes `goals.json` flap between valid and invalid. Tasks record `id`, `goal`, `title`, `status`
    (`open`/`in_progress`/`done`), `section` (`Now`/`Next`/`Needs decision`) and
    `depends_on`.
 4. **Order by payoff.** Milestone-critical goals first. Within them, `unverified`
