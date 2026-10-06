@@ -6,7 +6,7 @@ license: MIT
 metadata:
   hermes:
     tags: [git, commit, push, delivery, worktree, fleet]
-    related_skills: [lgtm, autogoal, hard-blockers, systematic-debugging]
+    related_skills: [lgtm, autogoal, hard-blockers, systematic-debugging, git-pull-merge]
 ---
 
 # Git Commit Push
@@ -108,7 +108,8 @@ Report the branch and sha it prints. Never point it at main/master or the checke
 
 6. **Push (explicit ship target only).**
    - Push the configured upstream; with one `origin` and no upstream, `git push -u origin HEAD`.
-   - Do not `git pull` / `--autostash` first. Push; on rejection, `git fetch` and inspect.
+   - Do not `git pull` / `--autostash` first. Push; on rejection, `git fetch` and inspect (the
+     `git-pull-merge` skill covers integrating remote changes safely).
      Fast-forward only when the incoming commits don't overlap yours and it is clearly safe. Merge or rebase needs
      explicit approval. Never force-push.
    - Verify the remote: `git fetch -q && [ "$(git rev-parse HEAD)" = "$(git rev-parse @{u})" ] && echo MATCH`.

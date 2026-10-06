@@ -13,6 +13,7 @@ Fleet workflow:
 | `/autogoal` | Picks the next goal-linked task (`goals.py next`) and hands it to a native 50-turn goal worker. The picker never implements. |
 | `/repo-docs` | Builds or maintains the core docs, keeps `goals.json`, and turns every unmet goal into a TODO.md task. |
 | `/git-commit-push` | Ships local changes safely in shared worktrees: stage → gate → push, verify the remote. |
+| `/git-pull-merge` | Brings remote or branch changes in safely: fetch, check overlap with others' dirty work, fast-forward or merge (never rebase/force), resolve conflicts, re-gate. |
 | `/lgtm` | Resolves a short approval against the latest checkpoint without widening scope. |
 | `/grill-me` | Stress-tests a plan; also the questionnaire format agents use whenever they need the user. |
 | `/hard-blockers` | BLOCKERS.md as the owner's open-questions ledger (defaults applied, work continues). |

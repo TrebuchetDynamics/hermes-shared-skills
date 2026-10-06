@@ -14,7 +14,7 @@ repo = Path(args['repo']).resolve()
 home = Path(os.environ.get('HERMES_HOME') or Path.home() / '.hermes')
 dry = args.get('dry_run', False)
 FLEET = ['fleet-governor', 'fleet-blockers', 'fleet-status']
-MENU = ['repo_docs', 'autogoal', 'grill_me', 'lgtm', 'git_commit_push', 'impeccable']
+MENU = ['repo_docs', 'autogoal', 'grill_me', 'lgtm', 'git_commit_push', 'git_pull_merge', 'impeccable']
 WRAPPERS = {'repo_docs_monitor.py': 'extras/monitors/repo_docs_monitor.py',
             'autogoal_monitor.py': 'extras/monitors/autogoal_monitor.py'}
 DEFAULT_ONLY = {'scratch_cleanup.py': 'extras/maintenance/scratch_cleanup.py',
