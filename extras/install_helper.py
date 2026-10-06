@@ -1,7 +1,7 @@
 """Per-profile wiring for hermes-shared-skills. Run by install.sh inside Hermes' own Python
 (after `import hermes_bootstrap`), so the YAML round-trip keeps comments and formatting.
 
-Args come from INSTALL_ARGS (JSON): repo, profiles, disable_fleet, telegram_menu, dry_run.
+Args come from INSTALL_ARGS (JSON): repo, profiles, disable_fleet, telegram_menu, soul, dry_run.
 """
 import json
 import os
@@ -15,7 +15,9 @@ home = Path(os.environ.get('HERMES_HOME') or Path.home() / '.hermes')
 dry = args.get('dry_run', False)
 FLEET = ['fleet-governor', 'fleet-blockers', 'fleet-status']
 MENU = ['repo_docs', 'autogoal', 'grill_me', 'lgtm', 'git_commit_push', 'impeccable']
-MONITORS = ['repo_docs_monitor.py', 'autogoal_monitor.py']
+WRAPPERS = {'repo_docs_monitor.py': 'extras/monitors/repo_docs_monitor.py',
+            'autogoal_monitor.py': 'extras/monitors/autogoal_monitor.py'}
+DEFAULT_ONLY = {'scratch_cleanup.py': 'extras/maintenance/scratch_cleanup.py'}
 
 yaml = YAML()  # round-trip
 yaml.preserve_quotes = True
@@ -63,12 +65,13 @@ for name in args['profiles']:
             print(f'[{name}] telegram not configured; menu pins skipped')
 
     scripts = ph / 'scripts'
-    for m in MONITORS:
+    wrappers = dict(WRAPPERS, **(DEFAULT_ONLY if name == 'default' else {}))
+    for m, rel in wrappers.items():
         wrapper = scripts / m
-        body = (f'#!/usr/bin/env python3\n# Wrapper: logic lives in {repo}/extras/monitors/{m}\n'
+        body = (f'#!/usr/bin/env python3\n# Wrapper: logic lives in {repo}/{rel}\n'
                 f'import runpy, sys\nsys.argv[0] = "{m}"\n'
-                f'runpy.run_path("{repo}/extras/monitors/{m}", run_name="__main__")\n')
-        if not wrapper.exists() or 'extras/monitors' not in wrapper.read_text():
+                f'runpy.run_path("{repo}/{rel}", run_name="__main__")\n')
+        if not wrapper.exists() or 'extras/' not in wrapper.read_text():
             if wrapper.exists():
                 print(f'[{name}] keep existing custom {wrapper} (not ours)')
                 continue
@@ -77,7 +80,22 @@ for name in args['profiles']:
                 scripts.mkdir(parents=True, exist_ok=True)
                 wrapper.write_text(body)
 
-    if changes and not dry:
+    if args.get('soul'):
+        soul = ph / 'SOUL.md'
+        text = soul.read_text() if soul.exists() else ''
+        add = ''
+        for snip in sorted((repo / 'extras/soul').glob('*.md')):
+            if snip.name == 'README.md':
+                continue
+            body = snip.read_text().strip()
+            heading = body.splitlines()[0]
+            if heading not in text:
+                add += '\n\n' + body; changes.append(f'SOUL += {heading[3:]}')
+        if add and not dry:
+            soul.write_text(text.rstrip('\n') + add + '\n')
+
+    cfg_changes = [c for c in changes if not c.startswith(('write ', 'SOUL'))]
+    if cfg_changes and not dry:
         with cfg_path.open('w') as fh:
             yaml.dump(data, fh)
     print(f'[{name}] ' + ('; '.join(changes) if changes else 'already up to date') + (' (dry run)' if dry and changes else ''))

@@ -6,38 +6,59 @@ Profiles, sessions and credentials are not part of this repo.
 
 ## Skills / commands
 
+Fleet workflow:
+
 | Command | What it does |
 |---|---|
 | `/autogoal` | Picks the next goal-linked task (`goals.py next`) and hands it to a native 50-turn goal worker. The picker never implements. |
-| `/repo-docs` | Builds or maintains the core docs (README, PRD, ADRs, spec, OpenAPI, test plan, runbook, CHANGELOG), keeps `goals.json` and turns every unmet goal into a TODO.md task. |
-| `/git-commit-push` | Ships local changes safely in shared worktrees: isolate your own work, stage → gate → push, verify the remote. |
+| `/repo-docs` | Builds or maintains the core docs, keeps `goals.json`, and turns every unmet goal into a TODO.md task. |
+| `/git-commit-push` | Ships local changes safely in shared worktrees: stage → gate → push, verify the remote. |
 | `/lgtm` | Resolves a short approval against the latest checkpoint without widening scope. |
-| `/grill-me` | Stress-tests a plan; also the **questionnaire format** agents use whenever they need the user (ask, don't block). |
+| `/grill-me` | Stress-tests a plan; also the questionnaire format agents use whenever they need the user. |
 | `/hard-blockers` | BLOCKERS.md as the owner's open-questions ledger (defaults applied, work continues). |
-| `/fleet-governor`, `/fleet-blockers`, `/fleet-status` | Default-profile fleet coordination. Disable them in project profiles (`skills.disabled`). |
+| `/fleet-governor`, `/fleet-blockers`, `/fleet-status` | Default-profile fleet coordination (disabled in project profiles). |
 | `/impeccable` | Frontend design skill, installed from upstream with a Hermes overlay (see NOTICE). |
+
+Engineering practice, written by the fleet's agents from real incidents:
+
+| Command | Use when |
+|---|---|
+| `/shared-worktree-commit-safety` | committing a dirty tree other agents may be writing |
+| `/codebase-audit-verification`, `/repo-issue-audit` | auditing a repo before reporting issues (read-only) |
+| `/docker-build-context-verification` | changing Docker build contexts or `.dockerignore` |
+| `/parallel-mechanical-edits`, `/consolidating-shared-constants` | fanning a mechanical change out; deduplicating repeated literals |
+| `/local-visual-verification`, `/operator-console-design` | verifying a UI change before claiming done; operator console UIs |
+| `/reference-product-port`, `/upstream-reference-verification` | porting a reference product; checking upstream clones and freshness |
+| `/repository-knowledge-engineering`, `/repository-maintenance` | building durable repo expertise; syncing repos and submodules |
+| `/mobile-release` | releasing mobile apps (version and gate checks) |
+| `/recurring-job-management` | tuning a Hermes cron job's schedule or cadence |
+| `/understand-anything-hermes` | installing and running Understand-Anything in a profile |
+| `/audio-generation` | creating spoken audio |
+
+Project-specific skills (codebase maps, domain triage) stay in their own profiles.
 
 Key design rules shared by these skills:
 - **Ask, don't block.** Needing the user means sending a questionnaire and applying reversible defaults, never pausing a goal.
 - **The met rule.** A goal in `goals.json` is `met` only with an executed, passing check (`repo-docs/scripts/goals.py`).
 - **The review handoff is a goal's last step.** Approval comes afterwards (see `extras/soul/review-handoff.md`).
 
-## Install
-
-The default location is `~/.hermes/shared-skills`. Several skills and templates reference it.
+## Install (new machine or fresh ~/.hermes)
 
 ```bash
-git clone git@github.com:<you>/hermes-shared-skills.git ~/.hermes/shared-skills
-~/.hermes/shared-skills/install.sh --profiles default,myproject     # external_dirs + monitor wrappers
-~/.hermes/shared-skills/extras/impeccable/sync_impeccable.sh        # optional: impeccable + overlay
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash        # Hermes itself, if missing
+git clone https://github.com/XelHaku/hermes-shared-skills ~/.hermes/shared-skills
+~/.hermes/shared-skills/bootstrap.sh [--impeccable]                        # default profile + weekly cleanup
+~/.hermes/shared-skills/extras/new_profile.sh myproject ~/git/myproject --deliver telegram:<chat_id>
 ```
 
-`install.sh --help` lists the optional steps: Telegram menu pins, cron jobs from `extras/cron/` templates, and
-disabling the fleet skills in project profiles. Update with `git pull`. Every profile reads the
-folder live through `skills.external_dirs`.
-
-Alternative: `hermes skills tap add <you>/hermes-shared-skills`, then `hermes skills install <skill>`
-copies individual skills into a profile (hub-scanned, updated with `hermes skills update`).
+- `bootstrap.sh` wires the default profile: `skills.external_dirs`, monitor and cleanup wrappers,
+  Telegram menu pins, and the SOUL snippets. It also schedules `scratch-cleanup-weekly`.
+- `new_profile.sh` creates or adopts a project profile, sets `terminal.cwd`, wires it (with the fleet
+  skills disabled) and creates its `repo-docs-on-change` and `autogoal` cron jobs from `extras/cron/`.
+  Use `--autogoal 15m` for busy profiles and `--no-cron` to skip the jobs.
+- `install.sh --profiles a,b [--disable-fleet] [--telegram-menu] [--soul] [--dry-run]` re-wires existing
+  profiles. It is idempotent.
+- Updates: `git -C ~/.hermes/shared-skills pull`. Every profile reads the folder live.
 
 ## Layout
 
@@ -49,6 +70,8 @@ extras/cron/          cron prompt templates
 extras/soul/          SOUL.md snippets every worker must see
 extras/impeccable/    upstream sync script + Hermes overlay
 extras/maintenance/   scratch_cleanup.py (weekly, no-agent cron; deletes worker scratch older than 7 days)
+extras/new_profile.sh create + wire a project profile with its cron jobs
+bootstrap.sh          one-shot setup for a new machine
 install.sh            per-profile wiring
 ```
 
