@@ -1,0 +1,27 @@
+name: test
+on: [push, pull_request]
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: goals.py
+        run: python repo-docs/scripts/test_goals.py
+      - name: autogoal
+        run: for t in autogoal/scripts/test_*.py; do python "$t" || exit 1; done
+      - name: fleet-blockers collector
+        run: python fleet-blockers/scripts/test_collect.py
+      - name: SKILL.md frontmatter
+        run: |
+          python - <<'PY'
+          import pathlib, re, sys
+          bad = []
+          for p in pathlib.Path('.').glob('*/SKILL.md'):
+              head = p.read_text().split('---')
+              if len(head) < 3 or not re.search(r'^name: \S+', head[1], re.M) or not re.search(r'^description: .+', head[1], re.M):
+                  bad.append(str(p))
+          print('bad frontmatter:', bad) if bad else print('frontmatter ok')
+          sys.exit(1 if bad else 0)
+          PY

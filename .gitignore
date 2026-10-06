@@ -1,0 +1,5 @@
+# Third-party skill synced from upstream (Apache-2.0); install with extras/impeccable/sync_impeccable.sh
+/impeccable/
+__pycache__/
+*.pyc
+.DS_Store

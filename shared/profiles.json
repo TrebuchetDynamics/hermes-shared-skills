@@ -1,0 +1,106 @@
+{
+  "superpowers": {
+    "repository": "https://github.com/obra/superpowers.git",
+    "revision": "5bf4e78011075bcfc0dc295f0724994cd123ee71",
+    "skills": [
+      "brainstorming",
+      "diagnosing-superpowers",
+      "dispatching-parallel-agents",
+      "executing-plans",
+      "finishing-a-development-branch",
+      "receiving-code-review",
+      "requesting-code-review",
+      "subagent-driven-development",
+      "systematic-debugging",
+      "test-driven-development",
+      "using-git-worktrees",
+      "using-superpowers",
+      "verification-before-completion",
+      "writing-plans",
+      "writing-skills"
+    ]
+  },
+  "optional": {
+    "design": [
+      "diagram-design",
+      "ui-ux-pro-max",
+      "design-taste-frontend",
+      "high-end-visual-design",
+      "minimalist-ui",
+      "industrial-brutalist-ui",
+      "image-to-code",
+      "imagegen-frontend-web",
+      "imagegen-frontend-mobile",
+      "brandkit",
+      "stitch-design-taste",
+      "stitch-react-components",
+      "hallmark",
+      "ui-vault",
+      "beautify-github-readme",
+      "chrome-extensions"
+    ],
+    "research": [
+      "research-forge",
+      "prompt-cache-auditor"
+    ],
+    "refactor": [
+      "unused-code",
+      "skill-folder-refactor",
+      "share-code",
+      "candidates-folder-refactor",
+      "prototype"
+    ],
+    "automation": [
+      "goal",
+      "autonomous-codebase-improver",
+      "memory-holographic-hermes-setup",
+      "hermes-repo-install",
+      "hermes-laya",
+      "bug-harvest",
+      "wayfinder",
+      "wayfinder-next"
+    ],
+    "authoring": [
+      "pi-ecosystem-scout"
+    ],
+    "delivery": [
+      "autoreview",
+      "greploop",
+      "s3upload"
+    ],
+    "planning": [
+      "grill-me",
+      "grill-with-docs",
+      "to-issues",
+      "to-prd",
+      "triage",
+      "zoom-out"
+    ],
+    "writing": [
+      "writing-shape"
+    ]
+  },
+  "retired": [
+    "caveman",
+    "tdd",
+    "diagnose",
+    "write-a-skill",
+    "skill-router",
+    "improve-codebase-architecture",
+    "ponytail",
+    "ponytail-audit",
+    "ponytail-debt",
+    "ponytail-gain",
+    "ponytail-help",
+    "ponytail-review",
+    "nack",
+    "full-output-enforcement",
+    "gpt-taste",
+    "design-taste-frontend-v1",
+    "ui-design",
+    "pi-subagents"
+  ],
+  "manual": [
+    "lgtm"
+  ]
+}
