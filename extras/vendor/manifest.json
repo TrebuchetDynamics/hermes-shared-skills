@@ -1,0 +1,96 @@
+{
+  "note": "Third-party skills installed into vendor/<source>/<skill>/ by sync_vendor.py (gitignored; pinned refs). Run sync_vendor.py --pin to bump refs to upstream HEAD.",
+  "sources": [
+    {
+      "name": "impeccable",
+      "repo": "pbakaus/impeccable",
+      "ref": "cf3d2fa07d3ad1814ac5fbbbb5b2043b795eaef1",
+      "license": "Apache-2.0",
+      "skills": [
+        ".hermes/skills/impeccable"
+      ],
+      "overlay": "extras/impeccable/overlay.md"
+    },
+    {
+      "name": "ponytail",
+      "repo": "DietrichGebert/ponytail",
+      "ref": "552acd5efd0aeae2583a12efe39373d2f076f25e",
+      "license": "MIT",
+      "skills": [
+        "skills/ponytail",
+        "skills/ponytail-review",
+        "skills/ponytail-audit",
+        "skills/ponytail-debt"
+      ]
+    },
+    {
+      "name": "mattpocock",
+      "repo": "mattpocock/skills",
+      "ref": "6fd947921b935b7e1e69293a200400f0fdd5c15f",
+      "license": "MIT",
+      "skills": [
+        "skills/engineering/grill-with-docs",
+        "skills/productivity/handoff=session-handoff",
+        "skills/engineering/prototype",
+        "skills/engineering/improve-codebase-architecture",
+        "skills/engineering/domain-modeling",
+        "skills/productivity/writing-for-agents"
+      ]
+    },
+    {
+      "name": "i-have-adhd",
+      "repo": "ayghri/i-have-adhd",
+      "ref": "839872f9d1cd634fed642b4589ce7226199cc15f",
+      "license": "MIT",
+      "skills": [
+        "skills/i-have-adhd"
+      ]
+    },
+    {
+      "name": "cloudflare-security-audit",
+      "repo": "cloudflare/security-audit-skill",
+      "ref": "c1c8a8c1471069fb0e188eeaff69b8e8db6564a8",
+      "license": "MIT",
+      "skills": [
+        "skills/security-audit"
+      ]
+    },
+    {
+      "name": "superpowers",
+      "repo": "obra/superpowers",
+      "ref": "8ca22dba9a94f28898bbce59f2537ff4d87c747d",
+      "license": "MIT",
+      "skills": [
+        "skills/verification-before-completion",
+        "skills/receiving-code-review",
+        "skills/writing-skills"
+      ]
+    },
+    {
+      "name": "diagram-design",
+      "repo": "cathrynlavery/diagram-design",
+      "ref": "d1376371965f513d99cc9ec388835d255c5c88d5",
+      "license": "MIT",
+      "skills": [
+        "skills/diagram-design"
+      ]
+    },
+    {
+      "name": "addyosmani",
+      "repo": "addyosmani/agent-skills",
+      "ref": "1401c8b8030e023baeebb31781a6653fe8e93026",
+      "license": "MIT",
+      "skills": [
+        "skills/code-simplification",
+        "skills/api-and-interface-design",
+        "skills/observability-and-instrumentation",
+        "skills/performance-optimization",
+        "skills/security-and-hardening",
+        "skills/deprecation-and-migration",
+        "skills/context-engineering",
+        "skills/browser-testing-with-devtools",
+        "skills/ci-cd-and-automation"
+      ]
+    }
+  ]
+}

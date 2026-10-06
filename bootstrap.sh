@@ -2,20 +2,21 @@
 # One-shot setup of hermes-shared-skills on a new machine (or a fresh ~/.hermes).
 #
 #   git clone https://github.com/XelHaku/hermes-shared-skills ~/.hermes/shared-skills
-#   ~/.hermes/shared-skills/bootstrap.sh [--impeccable] [--no-cleanup-cron] [--dry-run]
+#   ~/.hermes/shared-skills/bootstrap.sh [--no-vendor] [--no-cleanup-cron] [--dry-run]
 #
 # 1. Checks that Hermes is installed (prints the official installer otherwise).
 # 2. Wires the default profile: skills.external_dirs, monitor + cleanup wrappers, Telegram menu
 #    pins (if Telegram is configured), and the SOUL snippets from extras/soul/.
 # 3. Schedules the weekly no-agent scratch cleanup in the default profile (idempotent).
-# 4. Optionally installs impeccable from upstream with the Hermes overlay.
+# 4. Installs the pinned third-party skills from extras/vendor/manifest.json (skip with --no-vendor).
 # Then add project profiles with: extras/new_profile.sh <name> <workspace> [--deliver telegram:<chat>]
 set -euo pipefail
 repo=$(cd "$(dirname "$0")" && pwd)
-impeccable="" cleanup=true dry=""
+impeccable=--impeccable cleanup=true dry=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --impeccable) impeccable=--impeccable; shift;;
+    --no-vendor) impeccable=""; shift;;
     --no-cleanup-cron) cleanup=false; shift;;
     --dry-run) dry=--dry-run; shift;;
     -h|--help) sed -n '2,13p' "$0"; exit 0;;

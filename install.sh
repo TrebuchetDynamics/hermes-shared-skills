@@ -37,5 +37,5 @@ INSTALL_ARGS=$(python3 -c 'import json,sys; print(json.dumps({"repo": sys.argv[1
   "soul": sys.argv[6]=="true", "allow_all": sys.argv[7]=="true"}))' "$repo" "$profiles" "$disable_fleet" "$telegram_menu" "$dry_run" "$soul" "$allow_all")
 "$py" -I -c "import os, sys, runpy; sys.path.insert(0, '$agent_dir'); os.environ.setdefault('HERMES_HOME', os.path.expanduser('~/.hermes')); import hermes_bootstrap; runpy.run_path('$repo/extras/install_helper.py', run_name='__main__')"
 
-if $impeccable && ! $dry_run; then "$repo/extras/impeccable/sync_impeccable.sh"; fi
+if $impeccable && ! $dry_run; then python3 "$repo/extras/vendor/sync_vendor.py"; fi   # --impeccable kept as the "install vendored skills" switch
 echo "Done. Verify with: hermes -p <profile> skills list | grep external"

@@ -47,7 +47,7 @@ Key design rules shared by these skills:
 ```bash
 curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash        # Hermes itself, if missing
 git clone https://github.com/XelHaku/hermes-shared-skills ~/.hermes/shared-skills
-~/.hermes/shared-skills/bootstrap.sh [--impeccable]                        # default profile + weekly cleanup
+~/.hermes/shared-skills/bootstrap.sh                        # default profile + weekly cleanup
 ~/.hermes/shared-skills/extras/new_profile.sh myproject ~/git/myproject --deliver telegram:<chat_id>
 ```
 
@@ -59,6 +59,30 @@ git clone https://github.com/XelHaku/hermes-shared-skills ~/.hermes/shared-skill
 - `install.sh --profiles a,b [--disable-fleet] [--telegram-menu] [--soul] [--dry-run]` re-wires existing
   profiles. It is idempotent.
 - Updates: `git -C ~/.hermes/shared-skills pull`. Every profile reads the folder live.
+
+## Vendored third-party skills
+
+`extras/vendor/manifest.json` pins curated skills from other repositories. `extras/vendor/sync_vendor.py`
+installs them into `vendor/<source>/<skill>/` (gitignored, so their licenses stay with them).
+Each one gets a short Hermes note that maps other harnesses' tool names to Hermes tools and
+states that fleet rules win. `bootstrap.sh` runs it; re-run it any time, or with `--pin` to bump
+to upstream HEAD. The sync refuses names that collide with first-party or Hermes-bundled skills.
+
+| Source (license) | Commands |
+|---|---|
+| pbakaus/impeccable (Apache-2.0) | `/impeccable` (+ fleet overlay) |
+| DietrichGebert/ponytail (MIT) | `/ponytail`, `/ponytail-review`, `/ponytail-audit`, `/ponytail-debt` |
+| mattpocock/skills (MIT) | `/grill-with-docs`, `/session-handoff`, `/prototype`, `/improve-codebase-architecture`, `/domain-modeling`, `/writing-for-agents` |
+| ayghri/i-have-adhd (MIT) | `/i-have-adhd` |
+| cloudflare/security-audit-skill (MIT) | `/security-audit` |
+| obra/superpowers (MIT) | `/verification-before-completion`, `/receiving-code-review`, `/writing-skills` |
+| cathrynlavery/diagram-design (MIT) | `/diagram-design` |
+| addyosmani/agent-skills (MIT) | `/code-simplification`, `/api-and-interface-design`, `/observability-and-instrumentation`, `/performance-optimization`, `/security-and-hardening`, `/deprecation-and-migration`, `/context-engineering`, `/browser-testing-with-devtools`, `/ci-cd-and-automation` |
+
+Deliberately not vendored: duplicates of bundled or first-party skills (humanizer, TDD,
+systematic debugging, code review, grill-me), skills that overlap autogoal, repo-docs or
+git-commit-push, skills that force approval gates (superpowers' using-superpowers and
+brainstorming), and graphify (a CLI, not a skill; understand-anything-hermes covers it).
 
 ## Layout
 
