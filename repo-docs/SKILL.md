@@ -1,7 +1,7 @@
 ---
 name: repo-docs
 description: Build or maintain the repo's core docs (README, PRD, ADRs, spec, OpenAPI, test plan, runbook, CHANGELOG) and turn every unmet project goal into a TODO.md task for autogoal. STE-inspired language.
-version: 0.5.1
+version: 0.6.0
 license: MIT
 metadata:
   hermes:
@@ -312,7 +312,11 @@ only through `<this-skill-directory>/scripts/goals.py`, or write it and then run
    Use their existing IDs (e.g. `REQ-3`, `AC-2`). Give an unnumbered goal a short
    stable label from its document and heading. Each goal records `id`, `title`,
    `source` (path#heading), `status`, `evidence`, `tasks`, `depends_on` and
-   `priority` (lower = sooner; milestone-critical first).
+   `priority` (lower = sooner). Derive priority from the product's stated direction
+   (accepted ADRs, PRD, ROADMAP, CONTEXT). When the owner set an order, such as
+   "Desktop parity first", the goals it names get the lowest numbers. Goals that can
+   only be proven on unavailable infrastructure (a physical device, a production
+   service) sort last and carry a single owner-question task.
 2. **Check each against evidence: the met rule.** Statuses are `met`, `partial`,
    `unmet` and `unverified`.
    - A goal is **`met` only with an executed, passing check**: evidence
@@ -324,9 +328,15 @@ only through `<this-skill-directory>/scripts/goals.py`, or write it and then run
    - `goals.py fmt` downgrades any unproven `met` to `unverified`.
    - Only run checks that this pass is allowed to run. Otherwise record the
      check as `inspection` evidence and leave the goal `unverified`.
-3. **Turn every gap into a task.** Each partial, unmet or unverified goal gets at
-   least one bounded open task: the smallest next slice that fits one autogoal
-   worker run (about 50 turns). For an `unverified` goal, the task is "run or add
+3. **Turn every gap into a task: build first.** Each partial, unmet or unverified goal
+   gets at least one bounded open task: the smallest next slice that fits one autogoal
+   worker run (about 50 turns). Slices are **implementation work**: code plus the test
+   that proves it, named by the user-visible outcome ("Show grouped recents in the
+   sidebar like Desktop"). A goal may have at most **one** open investigation, contract
+   or "trace/map/assess/qualify" task, and only when a real unknown blocks
+   implementation. Never stack contract or preflight tasks, and never write "this entry
+   authorizes no implementation" or invent admission steps: the goal's acceptance
+   criteria are the authorization. For an `unverified` goal, the task is "run or add
    the end-to-end check that proves it". Split large goals into ordered slices
    with `depends_on`, and keep **two** open slices queued for any goal with remaining work
    (the next in `Now`, the one after in `Next`). Workers then never drain a goal's queue
