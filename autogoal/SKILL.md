@@ -146,7 +146,10 @@ checks) belongs to the worker's contract, not the picker. Over budget: hand off 
 far, or reply `[SILENT]` and leave a one-line note for the next run.
 
 1. **Reconcile first.** Read this profile's journal (`autogoal/goal-handoff.json`) and
-   `hermes kanban list --assignee <profile>` (plus `show` for the last card). Note terminal
+   `hermes kanban list --assignee <profile>` (plus `show` for the last card). Board reads, exactly:
+   `hermes kanban show <id> --json` returns `{task, latest_summary, runs, events, comments, ...}`, with status
+   at `.task.status` and the last run at `.runs[-1]`; `hermes kanban runs <id>` prints a table. Do not probe
+   other JSON shapes. Note terminal
    results not yet reported, and apply owner replies found via `session_search`. A genuinely
    live worker wins: reconcile it and hand off nothing overlapping. For a blocked, failed or
    crashed card, load `references/blockers-and-history.md`.
