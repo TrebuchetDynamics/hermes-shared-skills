@@ -18,9 +18,7 @@
       "license": "MIT",
       "skills": [
         "skills/ponytail",
-        "skills/ponytail-review",
-        "skills/ponytail-audit",
-        "skills/ponytail-debt"
+        "skills/ponytail-review"
       ]
     },
     {
@@ -30,7 +28,6 @@
       "license": "MIT",
       "skills": [
         "skills/engineering/grill-with-docs",
-        "skills/productivity/handoff=session-handoff",
         "skills/engineering/prototype",
         "skills/engineering/improve-codebase-architecture",
         "skills/engineering/domain-modeling",
@@ -61,9 +58,7 @@
       "ref": "8ca22dba9a94f28898bbce59f2537ff4d87c747d",
       "license": "MIT",
       "skills": [
-        "skills/verification-before-completion",
-        "skills/receiving-code-review",
-        "skills/writing-skills"
+        "skills/receiving-code-review"
       ]
     },
     {
@@ -81,15 +76,10 @@
       "ref": "1401c8b8030e023baeebb31781a6653fe8e93026",
       "license": "MIT",
       "skills": [
-        "skills/code-simplification",
         "skills/api-and-interface-design",
         "skills/observability-and-instrumentation",
         "skills/performance-optimization",
-        "skills/security-and-hardening",
-        "skills/deprecation-and-migration",
-        "skills/context-engineering",
-        "skills/browser-testing-with-devtools",
-        "skills/ci-cd-and-automation"
+        "skills/deprecation-and-migration"
       ]
     }
   ]

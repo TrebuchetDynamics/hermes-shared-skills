@@ -24,7 +24,7 @@ Engineering practice, written by the fleet's agents from real incidents:
 | Command | Use when |
 |---|---|
 | `/shared-worktree-commit-safety` | committing a dirty tree other agents may be writing |
-| `/codebase-audit-verification`, `/repo-issue-audit` | auditing a repo before reporting issues (read-only) |
+| `/codebase-audit-verification` | auditing a repo before reporting issues (read-only) |
 | `/docker-build-context-verification` | changing Docker build contexts or `.dockerignore` |
 | `/parallel-mechanical-edits`, `/consolidating-shared-constants` | fanning a mechanical change out; deduplicating repeated literals |
 | `/local-visual-verification`, `/operator-console-design` | verifying a UI change before claiming done; operator console UIs |
@@ -71,18 +71,30 @@ to upstream HEAD. The sync refuses names that collide with first-party or Hermes
 | Source (license) | Commands |
 |---|---|
 | pbakaus/impeccable (Apache-2.0) | `/impeccable` (+ fleet overlay) |
-| DietrichGebert/ponytail (MIT) | `/ponytail`, `/ponytail-review`, `/ponytail-audit`, `/ponytail-debt` |
-| mattpocock/skills (MIT) | `/grill-with-docs`, `/session-handoff`, `/prototype`, `/improve-codebase-architecture`, `/domain-modeling`, `/writing-for-agents` |
+| DietrichGebert/ponytail (MIT) | `/ponytail`, `/ponytail-review` |
+| mattpocock/skills (MIT) | `/grill-with-docs`, `/prototype`, `/improve-codebase-architecture`, `/domain-modeling`, `/writing-for-agents` |
 | ayghri/i-have-adhd (MIT) | `/i-have-adhd` |
 | cloudflare/security-audit-skill (MIT) | `/security-audit` |
-| obra/superpowers (MIT) | `/verification-before-completion`, `/receiving-code-review`, `/writing-skills` |
+| obra/superpowers (MIT) | `/receiving-code-review` |
 | cathrynlavery/diagram-design (MIT) | `/diagram-design` |
-| addyosmani/agent-skills (MIT) | `/code-simplification`, `/api-and-interface-design`, `/observability-and-instrumentation`, `/performance-optimization`, `/security-and-hardening`, `/deprecation-and-migration`, `/context-engineering`, `/browser-testing-with-devtools`, `/ci-cd-and-automation` |
+| addyosmani/agent-skills (MIT) | `/api-and-interface-design`, `/observability-and-instrumentation`, `/performance-optimization`, `/deprecation-and-migration` |
 
-Deliberately not vendored: duplicates of bundled or first-party skills (humanizer, TDD,
+Deliberately not vendored: skills that overlap ones the fleet already uses (2026-10-06 audit:
+code-simplification and ponytail-audit/debt vs ponytail and omh-tech-debt-audit; security-and-hardening vs
+security-audit; verification-before-completion vs omh-verification-gate and the met rule;
+ci-cd vs omh-automation-blueprint; browser-testing vs local-visual-verification and omh-visual-qa;
+context-engineering vs writing-for-agents; writing-skills vs hermes-agent-skill-authoring;
+session-handoff vs the core /handoff command), duplicates of bundled or first-party skills (humanizer, TDD,
 systematic debugging, code review, grill-me), skills that overlap autogoal, repo-docs or
 git-commit-push, skills that force approval gates (superpowers' using-superpowers and
 brainstorming), and graphify (a CLI, not a skill; understand-anything-hermes covers it).
+
+## Pruning unused skills
+
+`install.sh --prune` (run by bootstrap and new_profile) adds every name in `extras/disabled-skills.txt` to the
+profile's `skills.disabled`: Hermes-bundled and omh skills that were never used or viewed in ~500 sessions
+across 8 profiles (2026-10-06 audit). Each enabled skill costs a line in every prompt. To re-enable one,
+delete its line and remove it from the profile's `skills.disabled`.
 
 ## Layout
 

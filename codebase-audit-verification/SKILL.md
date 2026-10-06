@@ -125,7 +125,7 @@ Add that wrapper as an **opt-in** parameter on the shared pump helper. A helper 
 
 Then check the finder, not only the tap: assert the side effect **scoped to the surface it creates** (`find.descendant(of: find.byType(SnackBar), matching: find.text(...))`). The page usually renders the same value in its own panel, so an unscoped `findsOneWidget` fails on two matches while its unscoped inverse (`findsNothing`) passes for the wrong reason — the page showing the text regardless of the button. Scope both directions to the widget the action produced.
 
-Docker build contexts and `.dockerignore` rules: see `references/docker-build-context.md`.
+Docker build contexts and `.dockerignore` rules: load the `docker-build-context-verification` skill.
 
 Verifying that a small, dense data mark (a station glyph, a map symbol, a status dot carrying readings) is legible at the size it actually ships: see `references/dense-data-mark-legibility.md`.
 

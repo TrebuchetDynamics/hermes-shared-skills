@@ -34,7 +34,7 @@ if [ "$repo" != "$hermes_home/shared-skills" ]; then
   echo "note: repo is at $repo; skills and templates assume $hermes_home/shared-skills (symlink it there)." >&2
 fi
 
-"$repo/install.sh" --profiles default --telegram-menu --soul --allow-all $impeccable $dry
+"$repo/install.sh" --profiles default --telegram-menu --soul --allow-all --prune $impeccable $dry
 
 if $cleanup && [ -z "$dry" ]; then
   if hermes cron list 2>/dev/null | grep -q 'scratch-cleanup-weekly'; then
