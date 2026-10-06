@@ -75,6 +75,15 @@ Report the branch and sha it prints. Never point it at main/master or the checke
      each change with its tests and docs. Never commit code without the test that pins it.
    - Make only safe mechanical fixes (formatting, imports, ignored local output, stale paths).
      Do not expand product scope.
+   - When a feature depends on uncommitted predecessors, trace required symbols and
+     select only their necessary hunks with regression tests. Do not import a whole
+     backend merely because one fixture gained a contract. If whole-file inclusion
+     changes unrelated runtime outcomes, narrow the dependency or report the blocker.
+   - Gate that curated index in a complete `git checkout-index --all --prefix=.../`
+     snapshot, not the dirty root or a partial source mirror. Preserve tracked native
+     hosts/docs/source-contract inputs, verify every snapshot blob against the index,
+     and identify historical local-only receipt links rather than importing unrelated
+     ledgers or generated evidence to make Markdown closure pass.
 
 4. **Validate once, in the right order: stage → gate → push.**
    - Reuse existing results only when they cover the unchanged bytes: compare
