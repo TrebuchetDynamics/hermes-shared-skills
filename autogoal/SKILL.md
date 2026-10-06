@@ -140,6 +140,11 @@ Use /autogoal or an explicit request to choose useful project work autonomously.
 
 ## Each run (picker)
 
+**Picker budget:** a scheduled picker run spends at most about 30 tool calls or 10 minutes. It reconciles,
+selects, hands off and stops. Deep investigation (reading source, re-verifying branches, re-running
+checks) belongs to the worker's contract, not the picker. Over budget: hand off the best candidate so
+far, or reply `[SILENT]` and leave a one-line note for the next run.
+
 1. **Reconcile first.** Read this profile's journal (`autogoal/goal-handoff.json`) and
    `hermes kanban list --assignee <profile>` (plus `show` for the last card). Note terminal
    results not yet reported, and apply owner replies found via `session_search`. A genuinely
