@@ -46,7 +46,7 @@ Key design rules shared by these skills:
 
 ```bash
 curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash        # Hermes itself, if missing
-git clone https://github.com/XelHaku/hermes-shared-skills ~/.hermes/shared-skills
+git clone https://github.com/TrebuchetDynamics/hermes-shared-skills ~/.hermes/shared-skills
 ~/.hermes/shared-skills/bootstrap.sh                        # default profile + weekly cleanup
 ~/.hermes/shared-skills/extras/new_profile.sh myproject ~/git/myproject --deliver telegram:<chat_id>
 ```

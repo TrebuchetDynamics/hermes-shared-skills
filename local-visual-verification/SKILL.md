@@ -2,7 +2,7 @@
 name: local-visual-verification
 description: "Use when verifying a UI change before claiming done."
 version: 1.0.0
-author: SDRHF Hermes Agent
+author: Hermes fleet agent
 license: MIT
 platforms: [linux]
 metadata:

@@ -2,7 +2,7 @@
 name: understand-anything-hermes
 description: "Install and run Understand-Anything in a Hermes profile."
 version: 1.0.0
-author: SDRHF Hermes Agent
+author: Hermes fleet agent
 license: MIT
 platforms: [linux]
 metadata:

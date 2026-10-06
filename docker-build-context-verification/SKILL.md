@@ -2,7 +2,7 @@
 name: docker-build-context-verification
 description: "Verify Docker build-context and .dockerignore changes."
 version: 1.0.0
-author: SDRHF Hermes Agent
+author: Hermes fleet agent
 license: MIT
 platforms: [linux]
 metadata:

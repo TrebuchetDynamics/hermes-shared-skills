@@ -2,7 +2,7 @@
 name: operator-console-design
 description: "Use when designing or verifying an operator console UI."
 version: 1.0.0
-author: SDRHF Hermes Agent
+author: Hermes fleet agent
 license: MIT
 platforms: [linux]
 metadata:

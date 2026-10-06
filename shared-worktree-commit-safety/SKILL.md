@@ -2,7 +2,7 @@
 name: shared-worktree-commit-safety
 description: "Use when committing a dirty tree other agents may write."
 version: 1.0.0
-author: SDRHF Hermes Agent
+author: Hermes fleet agent
 license: MIT
 platforms: [linux]
 metadata:

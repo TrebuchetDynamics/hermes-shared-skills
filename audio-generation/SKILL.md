@@ -3,7 +3,7 @@ name: audio-generation
 description: Use when creating spoken audio. Match voice to language.
 version: 1.0.0
 license: MIT
-author: Arenaton
+author: Hermes fleet agent
 metadata:
   hermes:
     tags: [audio, speech, tts, creative]

@@ -2,7 +2,7 @@
 name: consolidating-shared-constants
 description: "Use when the same literal repeats across files."
 version: 1.0.0
-author: SDRHF Hermes Agent
+author: Hermes fleet agent
 license: MIT
 platforms: [linux]
 metadata:
