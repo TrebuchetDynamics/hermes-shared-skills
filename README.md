@@ -16,7 +16,7 @@ Fleet workflow:
 | `/lgtm` | Resolves a short approval against the latest checkpoint without widening scope. |
 | `/grill-me` | Stress-tests a plan; also the questionnaire format agents use whenever they need the user. |
 | `/hard-blockers` | BLOCKERS.md as the owner's open-questions ledger (defaults applied, work continues). |
-| `/fleet-governor`, `/fleet-blockers`, `/fleet-status` | Default-profile fleet coordination (disabled in project profiles). |
+| `/fleet-governor`, `/fleet-blockers`, `/fleet-status` | Default-profile fleet coordination (disabled in project profiles), including the daily **merge train** that lands verified worktree work on each repo's main (`fleet-governor/references/merge-train.md`). |
 | `/impeccable` | Frontend design skill, installed from upstream with a Hermes overlay (see NOTICE). |
 
 Engineering practice, written by the fleet's agents from real incidents:
@@ -51,8 +51,8 @@ git clone https://github.com/TrebuchetDynamics/hermes-shared-skills ~/.hermes/sh
 ~/.hermes/shared-skills/extras/new_profile.sh myproject ~/git/myproject --deliver telegram:<chat_id>
 ```
 
-- `bootstrap.sh` wires the default profile: `skills.external_dirs`, monitor and cleanup wrappers,
-  Telegram menu pins, and the SOUL snippets. It also schedules `scratch-cleanup-weekly`.
+- `bootstrap.sh` wires the default profile: `skills.external_dirs`, monitor, cleanup and merge-train wrappers,
+  Telegram menu pins, and the SOUL snippets. It also schedules `merge-train-daily` and `scratch-cleanup-weekly`.
 - `new_profile.sh` creates or adopts a project profile, sets `terminal.cwd`, wires it (with the fleet
   skills disabled) and creates its `repo-docs-on-change` and `autogoal` cron jobs from `extras/cron/`.
   Use `--autogoal 15m` for busy profiles and `--no-cron` to skip the jobs.

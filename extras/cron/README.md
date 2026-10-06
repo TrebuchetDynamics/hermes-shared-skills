@@ -6,6 +6,7 @@
 | Job | Schedule | Skill | Monitor | Notes |
 |---|---|---|---|---|
 | `repo-docs-on-change` | every 10 min, staggered | `repo-docs` | `repo_docs_monitor.py` | the model runs only on commits, finished cards (30 min debounce), drift, goals.json validation changes, or daily |
+| `merge-train-daily` (default profile) | `30 3 * * *` | none (`--no-agent --script merge_train_daily.py`) | — | lands verified worktree work on each repo's main; report in `~/.hermes/fleet-governor/merge-train/` |
 | `scratch-cleanup-weekly` (default profile) | `17 4 * * 0` | none (`--no-agent --script scratch_cleanup.py`) | — | deletes worker scratch older than 7 days; silent when nothing to delete |
 | `autogoal-hourly` | hourly (15 min for busy profiles) | `autogoal` | none | `context_from: self` so it sees its previous report |
 

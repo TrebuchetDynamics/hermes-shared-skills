@@ -37,6 +37,9 @@ fi
 "$repo/install.sh" --profiles default --telegram-menu --soul --allow-all --prune $impeccable $dry
 
 if $cleanup && [ -z "$dry" ]; then
+  if ! hermes cron list 2>/dev/null | grep -q 'merge-train-daily'; then
+    hermes cron create "30 3 * * *" --name merge-train-daily --script merge_train_daily.py --no-agent --deliver local
+  fi
   if hermes cron list 2>/dev/null | grep -q 'scratch-cleanup-weekly'; then
     echo "scratch-cleanup-weekly already scheduled"
   else

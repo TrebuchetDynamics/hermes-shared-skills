@@ -1,7 +1,7 @@
 ---
 name: fleet-governor
 description: Use for the default-profile fleet sweep — classify every project profile, unstick blocked/triage cards, route idle profiles to work, and surface only genuine user gates. Coordinates; never implements project changes.
-version: 0.5.0
+version: 0.6.0
 author: Hermes Agent
 license: MIT
 platforms: [linux]
@@ -64,7 +64,11 @@ same symptom. CLI facts are in `references/cli-cheatsheet.md`; use it instead of
      `hermes kanban set-model` override, then unblock once.
 4. **Route IDLE_WITH_WORK** by running `/autogoal` in that profile (one bounded
    selection). The governor never picks the code itself.
-5. **Record** the cycle JSON: per profile class, card, action taken, next check.
+5. **Merge train (daily).** `merge-train-daily` lands verified worktree work on each repo's main at
+   03:30 (see `references/merge-train.md`). In the first sweep after it, read
+   `~/.hermes/fleet-governor/merge-train/<date>.md`, report it, and route cards for repos left
+   unlanded (missing gate, regression, new failing PR check).
+6. **Record** the cycle JSON: per profile class, card, action taken, next check.
    Report only changes, delivered work and open owner questions (as a numbered
    questionnaire with defaults, `grill-me` Questionnaire mode).
 
