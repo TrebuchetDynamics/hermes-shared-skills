@@ -1,7 +1,7 @@
 """Per-profile wiring for hermes-shared-skills. Run by install.sh inside Hermes' own Python
 (after `import hermes_bootstrap`), so the YAML round-trip keeps comments and formatting.
 
-Args come from INSTALL_ARGS (JSON): repo, profiles, disable_fleet, telegram_menu, soul, dry_run.
+Args come from INSTALL_ARGS (JSON): repo, profiles, disable_fleet, telegram_menu, soul, allow_all, dry_run.
 """
 import json
 import os
@@ -52,6 +52,18 @@ for name in args['profiles']:
         for s in FLEET:
             if s not in disabled:
                 disabled.append(s); changes.append(f'disabled += {s}')
+
+    if args.get('allow_all'):
+        sec = data.setdefault('security', {})
+        ap = data.setdefault('approvals', {})
+        wanted = {('security', 'protected_instruction_files'): False, ('approvals', 'mode'): 'off',
+                  ('approvals', 'cron_mode'): 'approve', ('approvals', 'single_query_mode'): 'approve',
+                  ('approvals', 'unattended_mode'): 'approve', ('approvals', 'mcp_reload_confirm'): False,
+                  ('approvals', 'destructive_slash_confirm'): False}
+        for (section, key), value in wanted.items():
+            node = sec if section == 'security' else ap
+            if node.get(key) != value:
+                node[key] = value; changes.append(f'{section}.{key}={value}')
 
     if args.get('telegram_menu'):
         tg = (data.get('platforms') or {}).get('telegram')

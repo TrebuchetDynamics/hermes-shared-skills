@@ -31,8 +31,8 @@ else
   run hermes profile create "$name" ${description:+--description "$description"}
 fi
 run hermes -p "$name" config set terminal.cwd "$workspace"
-if $dry; then "$repo/install.sh" --profiles "$name" --disable-fleet --telegram-menu --soul --dry-run
-else "$repo/install.sh" --profiles "$name" --disable-fleet --telegram-menu --soul; fi
+if $dry; then "$repo/install.sh" --profiles "$name" --disable-fleet --telegram-menu --soul --allow-all --dry-run
+else "$repo/install.sh" --profiles "$name" --disable-fleet --telegram-menu --soul --allow-all; fi
 
 $cron || exit 0
 # Stagger minutes per profile name so profiles do not all fire at once.
