@@ -115,10 +115,17 @@ install.sh            per-profile wiring
 ## Tests
 
 ```bash
-python3 repo-docs/scripts/test_goals.py
-for t in autogoal/scripts/test_*.py; do python3 "$t"; done
-python3 fleet-blockers/scripts/test_collect.py
+python3 -m pip install 'ruamel.yaml>=0.18,<0.19'   # already included in Hermes' runtime
+python3 scripts/check.py                        # or: make test
 ```
 
+The same command runs in CI: it validates all first-party skill frontmatter with a real YAML
+parser (including the 60-character description budget), checks Python and shell syntax, and
+runs each offline `test_*.py` suite in an isolated process with a timeout. It includes fleet-status
+and helper-script tests. Vendored upstream content and hidden directories are excluded;
+`extras/vendor/` is first-party sync tooling and is included.
+
 `repo-docs/scripts/test_goal_gap_regression.py` and `hard-blockers/scripts/test_repo_docs.py` are
-behavioral regressions that call a real model through `hermes chat`. Run them manually after policy changes.
+behavioral regressions that call a real model through `hermes chat`. They are explicitly excluded
+from the offline runner. Run them manually after policy changes. New model-backed tests must
+also be added to `MODEL_TESTS` in `scripts/check.py` before using the offline runner.

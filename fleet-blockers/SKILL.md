@@ -1,6 +1,6 @@
 ---
 name: fleet-blockers
-description: Use for /fleet-blockers — read-only list of verified user actions (credentials, sudo, decisions) aggregated from every project repo BLOCKERS.md.
+description: "Use when listing verified owner questions across repos."
 version: 0.2.0
 author: Hermes Agent
 license: MIT

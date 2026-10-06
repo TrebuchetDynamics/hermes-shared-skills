@@ -70,7 +70,68 @@ def committed(path):
 ignore_file = R / '.repo-docs-drift-ignore'
 ignored = {l.strip() for l in ignore_file.read_text().splitlines() if l.strip() and not l.startswith('#')} if ignore_file.exists() else set()
 
-top_dirs = {p.name for p in R.iterdir() if p.is_dir() and not p.name.startswith('.')}
+# Check committed docs against the same committed tree. Working-tree source
+# deletions/creations must not retrigger this gate while a worker is editing.
+committed_dirs = {'.'}
+for path in tracked:
+    committed_dirs.update(str(parent) for parent in Path(path).parents)
+committed_paths = set(tracked) | committed_dirs
+committed_symlinks = {}
+for entry in sh('git', '-C', root, 'ls-tree', '-r', '-z', 'HEAD').split('\0'):
+    metadata, sep, path = entry.partition('\t')
+    if sep and metadata.startswith('120000 '):
+        committed_symlinks[path] = os.fsdecode(committed(path))
+top_dirs = {p.split('/', 1)[0] for p in tracked if '/' in p and not p.startswith('.')}
+
+
+def target_exists(path, *, directory=False):
+    # Resolve components from HEAD, never from mutable working-tree symlinks.
+    try:
+        pending = list(path.absolute().relative_to(R).parts)
+    except ValueError:
+        return Path(os.path.abspath(path)).exists()  # External links have no HEAD entry.
+    resolved = []
+    seen = set()
+    followed = 0
+    while pending:
+        component = pending.pop(0)
+        if component in ('', '.'):
+            continue
+        if component == '..':
+            if not resolved:
+                return False  # A repo-local symlink must not escape the committed tree.
+            resolved.pop()
+            continue
+        candidate = '/'.join([*resolved, component])
+        if candidate in committed_symlinks:
+            state = (candidate, tuple(pending))
+            followed += 1
+            if state in seen or followed > 40:
+                return False
+            seen.add(state)
+            target = Path(committed_symlinks[candidate])
+            if target.is_absolute():
+                try:
+                    target = target.relative_to(R)
+                except ValueError:
+                    return False
+                resolved = []
+            pending = list(target.parts) + pending
+        else:
+            if candidate not in committed_paths:
+                return False
+            if pending and candidate not in committed_dirs:
+                return False
+            resolved.append(component)
+    return not directory or ('/'.join(resolved) or '.') in committed_dirs
+
+
+# Include aliases that resolve to directories in HEAD, including the repo root.
+# File aliases and mutable working-tree targets must not widen the path scan.
+top_dirs.update(name for name in committed_symlinks
+                if '/' not in name and not name.startswith('.')
+                and target_exists(R / name, directory=True))
+
 broken = set()
 for rel_doc in docs:
     if not rel_doc.endswith('.md') or not CURRENT_STATE.search(rel_doc):
@@ -81,10 +142,10 @@ for rel_doc in docs:
         if re.match(r'^[a-z][a-z0-9+.-]*:', target) or target.startswith('#'):
             continue
         path = target.split('#', 1)[0]
-        if path and not (doc.parent / path).exists() and not (R / path).exists():
+        if path and not target_exists(doc.parent / path) and not target_exists(R / path):
             broken.add(f'{rel_doc}: link {path}')
     for token in TICKED.findall(text):
-        if token.split('/', 1)[0] in top_dirs and not (R / token).exists() and not (doc.parent / token).exists():
+        if token.split('/', 1)[0] in top_dirs and not target_exists(R / token) and not target_exists(doc.parent / token):
             broken.add(f'{rel_doc}: path {token}')
 
 goals = 'absent'

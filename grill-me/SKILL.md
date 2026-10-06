@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: Stress-test a plan or design in self-answer-first mode, and the questionnaire format agents use whenever they need the user (never block, ask). Use when the user says "grill me", wants plan gaps or hard decision pressure, or when work needs an owner answer. Do not use for glossary/ADR critique; use grill-with-docs.
+description: "Use when stress-testing plans or asking owner questions."
 ---
 
 # Grill Me

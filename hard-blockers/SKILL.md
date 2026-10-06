@@ -1,6 +1,6 @@
 ---
 name: hard-blockers
-description: Use when something needs the user (credential/info, sudo, or a product/money/security decision) or when maintaining BLOCKERS.md. Needing the user means asking a questionnaire and continuing, never stopping. Not for failing tests, missing user-space tools or hard engineering.
+description: "Use when work needs user input. Ask and keep moving."
 version: 0.2.0
 license: MIT
 author: Hermes Agent

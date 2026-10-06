@@ -36,7 +36,7 @@ def parse_entries(text):
             field = re.fullmatch(r'-\s+([^:]+):\s*(.*)', line.strip())
             if field:
                 if field[1] in current['fields']:
-                    problems.append('duplicate field in ' + current['id'])
+                    problems.append(current['id'] + ': duplicate field ' + field[1])
                 current['fields'][field[1]] = field[2]
         elif section == 'Active' and bare and bare != 'None.':
             problems.append('unrecognized Active content; not a valid hard-blocker entry')

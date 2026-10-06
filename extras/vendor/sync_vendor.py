@@ -7,7 +7,7 @@
 - Copies each skill folder, appends the source's overlay (if any) and the Hermes note to SKILL.md,
   and writes vendor/<source>/UPSTREAM.md (repo, commit, license) plus the upstream LICENSE.
 - Refuses a skill whose name collides with a first-party skill in this repo.
-- --pin resolves each `ref` (e.g. HEAD) to the fetched commit and writes it back to manifest.json.
+- --pin fetches each source at upstream HEAD and records that commit in manifest.json.
 A skill path may be written `path=name` to rename the installed folder (e.g. a root SKILL.md).
 vendor/ is gitignored: third-party content keeps its own license and is never committed here.
 """
@@ -108,7 +108,9 @@ def main():
         for source in manifest['sources']:
             if only and source['name'] not in only:
                 continue
-            root, commit = fetch(source, tmp)
+            # --pin updates existing pins to upstream HEAD, not to the old pin again.
+            fetch_source = {**source, 'ref': 'HEAD'} if a.pin else source
+            root, commit = fetch(fetch_source, tmp)
             names = install(source, root, commit, a.dry_run)
             total += names
             print(f"{source['name']:28} {commit[:10]}  {', '.join(names)}")

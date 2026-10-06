@@ -1,6 +1,6 @@
 ---
 name: autogoal
-description: Use when a cron or user asks to pick the next project task. Selects one evidence-backed slice and hands it to a native goal worker (50 turns); the picker itself does not implement.
+description: "Use when picking project work. Delegate a bounded task."
 version: 0.22.0
 author: Hermes Agent
 platforms: [linux, macos]

@@ -1,6 +1,6 @@
 ---
 name: git-pull-merge
-description: "Bring remote or branch changes into the current branch safely in shared worktrees: fetch, inspect divergence, fast-forward or merge (never rebase or force), resolve conflicts, re-gate and report. Use for /git-pull-merge, pull, sync with origin, update from main, or merging an agent/<profile>/<card> or PR branch; not for shipping local work (git-commit-push)."
+description: "Use when pulling or merging Git changes safely."
 version: 1.0.0
 license: MIT
 metadata:

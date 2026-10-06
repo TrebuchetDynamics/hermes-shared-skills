@@ -165,6 +165,42 @@ None.
             self.assertIn('missing', issues)
 
 
+    def test_duplicate_fields_are_entry_local_defects(self):
+        active = '''### BLK-20261005-001 — Choose persistence
+- Status: ACTIVE
+- Category: USER_DECISION
+- Owner: user
+- Task/Card: t_fixture
+- Blocked scope: Persistence
+- Why blocked: No backend selected.
+- Evidence: PRD.md
+- User action required: Choose SQLite or PostgreSQL.
+- Resume condition: Decision recorded.
+- Created: 2026-10-05T00:00:00Z
+- Last checked: 2026-10-05T00:00:00Z
+'''
+        resolved = '''### BLK-20261004-001 — Historical record
+- Status: RESOLVED
+- Category: USER_INPUT
+- Resolved: 2026-10-05T00:00:00Z
+- Resolution: Artifact supplied.
+- Evidence: receipt.json
+'''
+        second = active.replace('BLK-20261005-001', 'BLK-20261005-002')
+        for section in ['Active', 'Resolved']:
+            with self.subTest(section=section), tempfile.TemporaryDirectory() as folder:
+                text = '# BLOCKERS\n\n## Active\n' + active
+                if section == 'Active':
+                    text += '- Evidence: duplicate.md\n'
+                text += second + '\n## Resolved\n' + resolved
+                if section == 'Resolved':
+                    text += '- Evidence: duplicate.md\n'
+                (Path(folder) / 'BLOCKERS.md').write_text(text)
+                result = self.load().collect([{'repository': 'fixture', 'root': folder}])
+                expected = ['BLK-20261005-002'] if section == 'Active' else ['BLK-20261005-001', 'BLK-20261005-002']
+                self.assertEqual([entry['id'] for entry in result['recorded_active']], expected)
+                self.assertTrue(any('duplicate field' in issue['issue'] for issue in result['issues']))
+
     def test_invalid_resolved_history_does_not_hide_valid_active_entries(self):
         text = '''# BLOCKERS
 

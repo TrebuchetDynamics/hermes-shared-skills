@@ -64,6 +64,9 @@ def fleet_snapshot():
     for r in cards("1 = 1", ()):
         out.append(f"card {r[0]} {r[1]} {r[2]} run={r[4]}")
     root = Path(os.environ.get('HERMES_HOME') or Path.home() / '.hermes') / "profiles"
+    # A default-only installation need not have created profiles/ yet.
+    if not root.exists():
+        return out
     # Skip hidden folders (e.g. profiles/.deleted/ left by `hermes profile delete`) and non-profiles.
     for prof in sorted(p.name for p in root.iterdir()
                        if p.is_dir() and not p.name.startswith(".") and (p / "config.yaml").is_file()):

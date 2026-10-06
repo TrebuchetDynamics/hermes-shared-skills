@@ -1,6 +1,6 @@
 ---
 name: repo-docs
-description: Build or maintain the repo's core docs (README, PRD, ADRs, spec, OpenAPI, test plan, runbook, CHANGELOG) and turn every unmet project goal into a TODO.md task for autogoal. STE-inspired language.
+description: "Use when maintaining repo docs and goal-linked tasks."
 version: 0.6.0
 license: MIT
 metadata:

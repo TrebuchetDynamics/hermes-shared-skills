@@ -1,6 +1,6 @@
 ---
 name: fleet-status
-description: Use for /fleet-status — read-only snapshot of every Hermes profile (gateway, cron, cards, workers) with evidence limits. Does not repair.
+description: "Use when inspecting fleet health. Read-only status."
 version: 0.1.4
 author: Hermes Agent
 license: MIT

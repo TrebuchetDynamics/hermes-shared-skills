@@ -1,6 +1,6 @@
 ---
 name: fleet-governor
-description: Use for the default-profile fleet sweep — classify every project profile, unstick blocked/triage cards, route idle profiles to work, and surface only genuine user gates. Coordinates; never implements project changes.
+description: "Use when coordinating project profiles and idle workers."
 version: 0.6.0
 author: Hermes Agent
 license: MIT

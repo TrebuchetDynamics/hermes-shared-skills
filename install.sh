@@ -30,13 +30,22 @@ command -v hermes >/dev/null || { echo "hermes CLI not found on PATH" >&2; exit 
 # Borrow Hermes' runtime Python (it has ruamel.yaml) via its own launcher description.
 runtime=$(hermes --print-runtime-command)
 py=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])[0])' "$runtime")
-agent_dir=$(python3 -c 'import json,re,sys; print(re.search(r"sys.path.insert\(0, .([^\x27\x22]+)", json.loads(sys.argv[1])[-1]).group(1))' "$runtime")
+agent_dir=$(python3 -c 'import ast,json,sys
+code = ast.parse(json.loads(sys.argv[1])[-1])
+for node in ast.walk(code):
+    if isinstance(node, ast.Call) and ast.unparse(node.func) == "sys.path.insert" and len(node.args) == 2 and ast.literal_eval(node.args[0]) == 0:
+        path = ast.literal_eval(node.args[1])
+        if isinstance(path, str):
+            print(path)
+            break
+else:
+    raise SystemExit("Hermes runtime command has no source-root sys.path.insert")' "$runtime")
 
 export INSTALL_ARGS
 INSTALL_ARGS=$(python3 -c 'import json,sys; print(json.dumps({"repo": sys.argv[1], "profiles": sys.argv[2].split(","),
   "disable_fleet": sys.argv[3]=="true", "telegram_menu": sys.argv[4]=="true", "dry_run": sys.argv[5]=="true",
   "soul": sys.argv[6]=="true", "allow_all": sys.argv[7]=="true", "prune": sys.argv[8]=="true"}))' "$repo" "$profiles" "$disable_fleet" "$telegram_menu" "$dry_run" "$soul" "$allow_all" "$prune")
-"$py" -I -c "import os, sys, runpy; sys.path.insert(0, '$agent_dir'); os.environ.setdefault('HERMES_HOME', os.path.expanduser('~/.hermes')); import hermes_bootstrap; runpy.run_path('$repo/extras/install_helper.py', run_name='__main__')"
+"$py" -I -c 'import os, sys, runpy; sys.path.insert(0, sys.argv[1]); os.environ.setdefault("HERMES_HOME", os.path.expanduser("~/.hermes")); import hermes_bootstrap; runpy.run_path(sys.argv[2], run_name="__main__")' "$agent_dir" "$repo/extras/install_helper.py"
 
 if $impeccable && ! $dry_run; then python3 "$repo/extras/vendor/sync_vendor.py"; fi   # --impeccable kept as the "install vendored skills" switch
 echo "Done. Verify with: hermes -p <profile> skills list | grep external"

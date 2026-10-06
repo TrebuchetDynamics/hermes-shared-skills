@@ -1,6 +1,6 @@
 ---
 name: git-commit-push
-description: "Ship local Git changes: inspect, isolate own work in shared worktrees, validate once, commit coherently, push and verify the remote. Use for /git-commit-push, commit, push, ship, delivery audit or delivery blockers; not deploys or releases."
+description: "Use when committing and pushing scoped Git changes."
 version: 1.2.0
 license: MIT
 metadata:

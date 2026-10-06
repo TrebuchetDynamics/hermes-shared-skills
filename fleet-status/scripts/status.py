@@ -193,7 +193,9 @@ def runtime_observation(root):
     path=root/'gateway_state.json'
     try:
         if path.is_symlink():return {}
-        data=json.loads(path.read_text());pid=data.get('pid')
+        data=json.loads(path.read_text())
+        if not isinstance(data,dict):return {}
+        pid=data.get('pid')
         alive=None
         if isinstance(pid,int) and pid>0:
             try:os.kill(pid,0);alive=True
@@ -223,6 +225,7 @@ def collect(root):
         if jobs.is_file():
             try:
                 data=json.loads(jobs.read_text());items=data if isinstance(data,list) else data['jobs'];items=list(items.values()) if isinstance(items,dict) else items
+                if not isinstance(items,list) or any(not isinstance(j,dict) for j in items):raise ValueError('Invalid scheduler job records')
                 row['jobs']=[{k:j.get(k) for k in ['id','name','enabled','schedule','model','provider','last_status','last_run_at']} for j in items];row['jobs_known']=True
             except (OSError,ValueError,KeyError,TypeError):pass
         # An absent scheduler file is unknown, not proof of zero jobs in all scheduler systems.
@@ -259,7 +262,7 @@ def collect(root):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--stale-seconds',type=int,default=300);p.add_argument('--automation-stale-seconds',type=int,default=86400)
-    args=p.parse_args();root=Path(__file__).resolve().parents[4]
+    args=p.parse_args();root=Path(__file__).resolve().parents[3]
     print(json.dumps(build_report(collect(root),stale_seconds=args.stale_seconds,automation_stale_seconds=args.automation_stale_seconds),indent=2))
 
 if __name__=='__main__':main()

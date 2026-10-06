@@ -182,6 +182,35 @@ class StatusTests(unittest.TestCase):
             self.assertEqual(result['work']['counts']['blocked'],1)
             self.assertNotIn('fixture-secret',json.dumps(result))
 
+    def test_main_collects_hermes_root_not_user_home(self):
+        from unittest.mock import patch
+        import contextlib
+        import io
+        with patch('sys.argv', ['status.py']), patch.object(self.m, 'collect', return_value=self.raw) as collect, contextlib.redirect_stdout(io.StringIO()):
+            self.m.main()
+        self.assertEqual(collect.call_args.args[0], FILE.resolve().parents[3])
+
+    def test_malformed_runtime_json_is_unknown(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for data in [[], None, 42, 'not a state object']:
+                with self.subTest(data=data):
+                    (root / 'gateway_state.json').write_text(json.dumps(data))
+                    self.assertEqual(self.m.runtime_observation(root), {})
+
+    def test_malformed_scheduler_entries_are_unknown(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'config.yaml').write_text('goals:\n  max_turns: 50\n')
+            (root / 'cron').mkdir()
+            for data in [[None], [7], ['bad job'], {'jobs': {'job1': None}}, {'jobs': 'not a list'}]:
+                with self.subTest(data=data):
+                    (root / 'cron/jobs.json').write_text(json.dumps(data))
+                    raw = self.m.collect(root)
+                    self.assertFalse(raw['profiles'][0]['jobs_known'])
+                    self.assertEqual(raw['profiles'][0]['jobs'], [])
+                    self.assertEqual(self.m.build_report(raw)['automations']['state'], 'UNKNOWN')
+
     def test_stale_automation(self):
         self.raw['profiles'][0]['jobs']=[{'id':'j1','enabled':True,'last_status':'ok','last_run_at':1}]
         self.assertEqual(self.m.build_report(self.raw,now=1000,automation_stale_seconds=100)['automations']['jobs'][0]['freshness'],'STALE')

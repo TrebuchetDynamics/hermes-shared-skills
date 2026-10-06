@@ -89,16 +89,34 @@ for name in args['profiles']:
     for m, rel in wrappers.items():
         wrapper = scripts / m
         body = (f'#!/usr/bin/env python3\n# Wrapper: logic lives in {repo}/{rel}\n'
-                f'import runpy, sys\nsys.argv[0] = "{m}"\n'
-                f'runpy.run_path("{repo}/{rel}", run_name="__main__")\n')
-        if not wrapper.exists() or 'extras/' not in wrapper.read_text():
-            if wrapper.exists():
-                print(f'[{name}] keep existing custom {wrapper} (not ours)')
-                continue
-            changes.append(f'write {wrapper}')
-            if not dry:
-                scripts.mkdir(parents=True, exist_ok=True)
-                wrapper.write_text(body)
+                f'import runpy, sys\nsys.argv[0] = {m!r}\n'
+                f'runpy.run_path({str(repo / rel)!r}, run_name="__main__")\n')
+        existing = wrapper.read_text() if wrapper.exists() else None
+        if existing == body:
+            continue
+        # Only refresh exact generated bodies (including the legacy quoting).
+        # An extras/ reference or a copied header alone does not confer ownership.
+        managed = False
+        if existing is not None:
+            lines = existing.splitlines()
+            marker = '# Wrapper: logic lives in '
+            if len(lines) == 5 and lines[1].startswith(marker):
+                old_target = lines[1][len(marker):]
+                if old_target.endswith('/' + rel):
+                    header = f'#!/usr/bin/env python3\n{marker}{old_target}\nimport runpy, sys\n'
+                    managed = existing in (
+                        header + f'sys.argv[0] = {m!r}\n'
+                        + f'runpy.run_path({old_target!r}, run_name="__main__")\n',
+                        header + f'sys.argv[0] = "{m}"\n'
+                        + f'runpy.run_path("{old_target}", run_name="__main__")\n',
+                    )
+        if existing is not None and not managed:
+            print(f'[{name}] keep existing custom {wrapper} (not ours)')
+            continue
+        changes.append(f'write {wrapper}')
+        if not dry:
+            scripts.mkdir(parents=True, exist_ok=True)
+            wrapper.write_text(body)
 
     if args.get('soul'):
         soul = ph / 'SOUL.md'
