@@ -64,7 +64,9 @@ def fleet_snapshot():
     for r in cards("1 = 1", ()):
         out.append(f"card {r[0]} {r[1]} {r[2]} run={r[4]}")
     root = Path(os.environ.get('HERMES_HOME') or Path.home() / '.hermes') / "profiles"
-    for prof in sorted(p.name for p in root.iterdir() if p.is_dir()):
+    # Skip hidden folders (e.g. profiles/.deleted/ left by `hermes profile delete`) and non-profiles.
+    for prof in sorted(p.name for p in root.iterdir()
+                       if p.is_dir() and not p.name.startswith(".") and (p / "config.yaml").is_file()):
         cfg = (root / prof / "config.yaml").read_text(errors="replace")
         ws = next((l.split("cwd:", 1)[1].strip() for l in cfg.splitlines() if l.strip().startswith("cwd:")), "")
         out.append(f"blockers {prof} {fhash(Path(ws) / 'BLOCKERS.md') if ws else 'n/a'}")
