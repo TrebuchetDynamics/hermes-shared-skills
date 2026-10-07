@@ -78,6 +78,40 @@ class BranchPhase(unittest.TestCase):
         self.assertEqual(sh('git', 'status', '--porcelain', cwd=self.repo), '')
 
 
+    def test_submodule_lands_before_parent_pointer(self):
+        sub_origin = self.tmp / 'sub.git'
+        sh('git', 'init', '-q', '--bare', '-b', 'main', str(sub_origin))
+        seed = self.tmp / 'seed'
+        sh('git', 'clone', '-q', str(sub_origin), str(seed))
+        (seed / 'lib.py').write_text('x = 0\n')
+        sh('git', '-c', 'user.email=t@t', '-c', 'user.name=t', '-C', str(seed), 'add', '-A')
+        sh('git', '-c', 'user.email=t@t', '-c', 'user.name=t', '-C', str(seed), 'commit', '-qm', 'seed')
+        sh('git', '-C', str(seed), 'push', '-q', 'origin', 'HEAD:main')
+        sh('git', '-c', 'protocol.file.allow=always', 'submodule', 'add', '-q', str(sub_origin), 'mod', cwd=self.repo)
+        sh('git', 'commit', '-qm', 'add submodule', cwd=self.repo)
+        sh('git', 'push', '-q', 'origin', 'main', cwd=self.repo)
+        sub = self.repo / 'mod'
+        for k, v in (('user.email', 't@t'), ('user.name', 't')):
+            sh('git', 'config', k, v, cwd=sub)
+        (sub / '.hermes').mkdir()
+        (sub / '.hermes' / 'merge-train.json').write_text('{"gate": ["true"]}')
+        (sub / 'lib.py').write_text('x = 1\n')
+        old = os.stat(sub / 'lib.py').st_mtime - 3600
+        for p in (sub / 'lib.py', sub / '.hermes' / 'merge-train.json'):
+            os.utime(p, (old, old))
+        env_cfg = self.tmp / 'gitconfig'
+        env_cfg.write_text('[submodule]\n\trecurse = true\n[protocol "file"]\n\tallow = always\n')
+        os.environ['GIT_CONFIG_GLOBAL'] = str(env_cfg)
+        try:
+            out = self.run_train()
+        finally:
+            del os.environ['GIT_CONFIG_GLOBAL']
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertNotIn('error', out.stdout)
+        sub_head = sh('git', 'rev-parse', 'HEAD', cwd=sub)
+        self.assertEqual(sh('git', '-C', str(sub_origin), 'rev-parse', 'main'), sub_head)
+        self.assertEqual(sh('git', 'rev-parse', 'origin/main:mod', cwd=self.repo), sub_head)
+
 
 class FailureComparison(unittest.TestCase):
     def test_only_new_failures_block_when_main_is_red(self):

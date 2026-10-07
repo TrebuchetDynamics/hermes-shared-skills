@@ -53,6 +53,8 @@ SECRET_PATHS = ('.env', '.env.*', '*.pem', '*.key', '*.p12', '*.jks', '*.keystor
 SECRET_TEXT = re.compile(r'BEGIN [A-Z ]*PRIVATE KEY|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|sk-or-v1-[A-Za-z0-9]{30,}'
                          r'|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{20,}|AIza[0-9A-Za-z_-]{35}')
 MAX_BYTES = 5 * 1024 * 1024
+# Scratch worktrees have no submodule checkouts: a global submodule.recurse=true breaks read-tree there.
+os.environ.update(GIT_CONFIG_COUNT='1', GIT_CONFIG_KEY_0='submodule.recurse', GIT_CONFIG_VALUE_0='false')
 
 
 def sh(args, cwd=None, env=None, timeout=None, check=False):
