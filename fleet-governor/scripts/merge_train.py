@@ -271,6 +271,29 @@ def flutter_failed_files(output, wt):
     return files
 
 
+FAIL_PATTERNS = [re.compile(p, re.M) for p in (
+    r'(\S+_test\.dart): .* \[E\]',            # flutter test
+    r'^test (\S+) \.\.\. FAILED',              # cargo test
+    r'^(?:FAILED|ERROR) (\S+)',                 # pytest
+    r'^--- FAIL: (\S+)', r'^FAIL\s+(\S+)',      # go test, vitest/jest
+    r'^(error(?:\[E\d+\])?: .+)$',              # compiler errors
+    r'^\s*error • (.+)$',                       # dart analyze errors
+)]
+
+
+def failing_ids(output):
+    return {m.group(1)[:200] for p in FAIL_PATTERNS for m in p.finditer(output)}
+
+
+def new_failure(cand_rc, cand_out, base_rc, base_out):
+    """True when the candidate fails in a way main does not."""
+    if not cand_rc:
+        return False
+    if not base_rc:
+        return True
+    return bool(failing_ids(cand_out) - failing_ids(base_out))  # both fail: compare what fails
+
+
 # ---------------------------------------------------------------- land
 def land(repo, tree, message, ci_wait_min, dry):
     base = git(repo, 'rev-parse', 'HEAD')
@@ -433,11 +456,11 @@ def branch_phase(name, repo, a, log, prefix=None):
         return f'branches: {len(merged)} not merged: {source}'
     log.write(f'\n## {name} branches ({repo})\ngate from {source}: {cmds}\n')
     base_wt = worktree(repo, f'{name}-bbase', at=base)
-    base_rc = {c: rc for c, rc, _ in run_gate(base_wt, cmds, log)}
+    base_res = {c: (rc, out) for c, rc, out in run_gate(base_wt, cmds, log)}
 
     def passes(commit):
         wt = worktree(repo, f'{name}-bcand', at=commit)
-        return not [c for c, rc, _ in run_gate(wt, cmds, log) if rc and base_rc.get(c, 1) == 0]
+        return not [c for c, rc, out in run_gate(wt, cmds, log) if new_failure(rc, out, *base_res.get(c, (1, '')))]
 
     accepted, failing, cur = [], [], base
     pending = [merged]
@@ -510,7 +533,8 @@ def train_repo(name, repo, a, log):
         if not failed:
             break
         base_wt = worktree(repo, f'{name}-base')
-        base_res = {c: rc for c, rc, _ in run_gate(base_wt, [c for c, _ in failed], log)}
+        base_out = {c: (rc, out) for c, rc, out in run_gate(base_wt, [c for c, _ in failed], log)}
+        base_res = {c: rc for c, (rc, _) in base_out.items()}
         blocking, retry = [], set()
         for cmd, out in failed:
             if 'flutter test' in cmd:
@@ -523,8 +547,9 @@ def train_repo(name, repo, a, log):
                     retry |= changed
                 elif base_res.get(cmd, 1) == 0:
                     blocking.append(f'{cmd}: fails only on candidate')
-            elif base_res.get(cmd, 1) == 0:
-                blocking.append(f'{cmd}: fails only on candidate')
+            elif new_failure(1, out, *base_out.get(cmd, (1, ''))):
+                new = sorted(failing_ids(out) - failing_ids(base_out.get(cmd, (1, ''))[1]))[:3]
+                blocking.append(f'{cmd}: fails only on candidate' + (f' {new}' if new else ''))
         if blocking:
             return 'not landed: ' + '; '.join(blocking)[:600]
         if retry and attempt == 1:

@@ -78,5 +78,16 @@ class BranchPhase(unittest.TestCase):
         self.assertEqual(sh('git', 'status', '--porcelain', cwd=self.repo), '')
 
 
+
+class FailureComparison(unittest.TestCase):
+    def test_only_new_failures_block_when_main_is_red(self):
+        sys.path.insert(0, str(HERE))
+        import merge_train as m
+        self.assertFalse(m.new_failure(1, 'FAILED t.py::a\n', 1, 'FAILED t.py::a\n'))
+        self.assertTrue(m.new_failure(1, 'FAILED t.py::a\nFAILED t.py::b\n', 1, 'FAILED t.py::a\n'))
+        self.assertTrue(m.new_failure(1, 'anything', 0, ''))
+        self.assertFalse(m.new_failure(0, '', 1, 'FAILED t.py::a'))
+        self.assertTrue(m.new_failure(1, 'test x::y ... FAILED\n', 1, 'test x::z ... FAILED\n'))
+
 if __name__ == '__main__':
     unittest.main()
