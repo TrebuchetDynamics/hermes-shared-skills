@@ -56,7 +56,7 @@ for name in args['profiles']:
 
     if args.get('prune'):
         disabled = ensure_list(skills, 'disabled')
-        for line in (repo / 'extras/disabled-skills.txt').read_text().splitlines():
+        for line in (repo / 'extras/install/disabled-skills.txt').read_text().splitlines():
             n = line.strip()
             if n and not n.startswith('#') and n not in disabled:
                 disabled.append(n); changes.append(f'disabled += {n}')

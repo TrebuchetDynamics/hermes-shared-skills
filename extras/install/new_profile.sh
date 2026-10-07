@@ -8,7 +8,7 @@
 # (external_dirs, fleet skills disabled, Telegram menu, SOUL snippets) -> cron jobs from
 # extras/cron/: repo-docs-on-change (monitor-gated, every 10 min) and autogoal (with continuity).
 set -euo pipefail
-repo=$(cd "$(dirname "$0")/.." && pwd)
+repo=$(cd "$(dirname "$0")/../.." && pwd)
 [ $# -ge 2 ] || { sed -n '2,9p' "$0"; exit 2; }
 name=$1 workspace=$(realpath "$2"); shift 2
 deliver=local cadence=hourly description="" cron=true dry=false

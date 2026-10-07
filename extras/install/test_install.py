@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[2]
 AGENT = Path(os.environ.get('HERMES_AGENT_DIR', Path.home() / '.hermes/hermes-agent'))
 
 
@@ -47,7 +47,7 @@ class InstallTests(unittest.TestCase):
         env = dict(os.environ, HERMES_HOME=str(self.home), INSTALL_ARGS=json.dumps({
             'repo': str(repo or self.repo), 'profiles': ['default'], 'dry_run': dry}))
         code = (f'import sys, runpy; sys.path.insert(0, {self.dependencies!r}); '
-                f'runpy.run_path({str(REPO / "extras/install_helper.py")!r}, run_name="__main__")')
+                f'runpy.run_path({str(REPO / "extras/install/install_helper.py")!r}, run_name="__main__")')
         result = subprocess.run([sys.executable, '-I', '-c', code], env=env,
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -57,8 +57,8 @@ class InstallTests(unittest.TestCase):
         repo = self.root / repo_name
         repo.mkdir()
         shutil.copy2(REPO / 'install.sh', repo / 'install.sh')
-        (repo / 'extras').mkdir()
-        shutil.copy2(REPO / 'extras/install_helper.py', repo / 'extras/install_helper.py')
+        (repo / 'extras/install').mkdir(parents=True)
+        shutil.copy2(REPO / 'extras/install/install_helper.py', repo / 'extras/install/install_helper.py')
         agent = self.root / agent_name
         agent.mkdir()
         (agent / 'hermes_bootstrap.py').write_text(

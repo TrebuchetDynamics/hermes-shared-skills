@@ -9,7 +9,7 @@
 #    pins (if Telegram is configured), and the SOUL snippets from extras/soul/.
 # 3. Schedules the weekly no-agent scratch cleanup in the default profile (idempotent).
 # 4. Installs the pinned third-party skills from extras/vendor/manifest.json (skip with --no-vendor).
-# Then add project profiles with: extras/new_profile.sh <name> <workspace> [--deliver telegram:<chat>]
+# Then add project profiles with: extras/install/new_profile.sh <name> <workspace> [--deliver telegram:<chat>]
 set -euo pipefail
 repo=$(cd "$(dirname "$0")" && pwd)
 impeccable=--impeccable cleanup=true dry=""
@@ -50,7 +50,7 @@ fi
 cat <<EOF
 
 Next steps:
-  - Add a project profile:   $repo/extras/new_profile.sh <name> <workspace> [--deliver telegram:<chat_id>]
+  - Add a project profile:   $repo/extras/install/new_profile.sh <name> <workspace> [--deliver telegram:<chat_id>]
   - Optional fleet governor: see extras/cron/README.md (default profile, every 2h).
   - Optional plugin used by this fleet: omh (third-party; install it per its own instructions).
   - Update later with:       git -C $repo pull
