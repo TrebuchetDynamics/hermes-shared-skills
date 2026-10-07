@@ -45,7 +45,15 @@ The CLI's install handler may ignore the platform installation return value, so
 exit 0 alone does not prove installation or that the latest APK replaced an
 existing copy. Establish installed-byte identity separately when claiming it.
 A running process is launch evidence, not rendered UI, interaction, connection
-or chat evidence. Headless Weston can refuse screen capture with `unauthorized`;
+or chat evidence. For Maestro, use the flow's matching fixture entrypoint rather
+than a production-entry QA build; fixture receipts are not live Agent evidence.
+When a Waydroid screenshot disagrees with the failure, inspect the current
+Maestro hierarchy and a minimal flow before attributing the cause to the pixels.
+Disambiguate editor fields from same-named sidebar destinations using the known
+synthetic field value. Tap a visible Save directly when hideKeyboard would send
+an unnecessary Back action. If driver startup times out, inspect installed
+instrumentation and try the installed driver with --no-reinstall-driver before
+rebuilding the app; an instrumentation service may intentionally remain running. Headless Weston can refuse screen capture with `unauthorized`;
 do not bypass compositor or Android debugging permission to get a screenshot.
 
 ## When the page cannot render here
