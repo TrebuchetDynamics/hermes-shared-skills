@@ -154,7 +154,11 @@ far, or reply `[SILENT]` and leave a one-line note for the next run.
    live worker wins: reconcile it and hand off nothing overlapping. For a blocked, failed or
    crashed card, load `references/blockers-and-history.md`.
 2. **Select.** Run `python ~/.hermes/shared-skills/repo-docs/scripts/goals.py next <repo> --json`
-   and take the first eligible task not claimed by a live owner (Operating priority 2). Load
+   and take the first eligible task not claimed by a live owner (Operating priority 2). If a
+   returned task is not actually runnable, repair the backlog instead of going silent. If it needs an
+   owner action or decision, run `goals.py section <repo> <TASK> "Needs decision"` and ask (hard-blockers).
+   If it bundles excluded scope, register the in-scope slice with `goals.py add-task` and park the rest.
+   Then pick again, within the picker budget. Load
    `references/discovery.md` only when that returns nothing, the repo has no `goals.json`, or
    the profile has no `repo-docs` cron job. If it returned a task, do not load discovery.md
    to double-check it.

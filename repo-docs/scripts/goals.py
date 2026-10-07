@@ -9,6 +9,7 @@ Agents change goals.json only through these commands, never by hand-editing JSON
   goals.py next <repo> [--json]                  next eligible open task (dependencies satisfied)
   goals.py render <repo>                         rewrite TODO.md's goal-coverage block from goals.json
   goals.py task <repo> <TASK> <open|in_progress|done>
+  goals.py section <repo> <TASK> <Now|Next|Needs decision>
   goals.py add-task <repo> <TASK> --goal <GOAL> --title <text> [--section Now|Next|Needs decision] [--depends-on T1,T2]
   goals.py evidence <repo> <GOAL> --kind executed|inspection --ref <cmd/path> --result pass|fail [--ran-at ISO]
 
@@ -166,6 +167,8 @@ def main():
         sub.add_parser(name).add_argument('repo')
     n = sub.add_parser('next'); n.add_argument('repo'); n.add_argument('--json', action='store_true')
     t = sub.add_parser('task'); t.add_argument('repo'); t.add_argument('task'); t.add_argument('status', choices=TASK_STATUS)
+    s2 = sub.add_parser('section'); s2.add_argument('repo'); s2.add_argument('task')
+    s2.add_argument('section', choices=[s for s in SECTIONS if s != 'Done'])
     n2 = sub.add_parser('add-task'); n2.add_argument('repo'); n2.add_argument('task')
     n2.add_argument('--goal', required=True); n2.add_argument('--title', required=True)
     n2.add_argument('--section', default='Next', choices=[s for s in SECTIONS if s != 'Done'])
@@ -204,6 +207,12 @@ def main():
             print(f"WARNING: {goal['id']} is still {goal['status']} with no open task. Record the check you ran: "
                   f"goals.py evidence {a.repo} {goal['id']} --kind executed --ref \"<command>\" --result pass")
         print('ok'); return
+    if a.cmd == 'section':
+        task = next((x for x in data['tasks'] if x['id'] == a.task), None) or sys.exit(f'unknown task {a.task}')
+        if task.get('status') == 'done':
+            sys.exit(f'task {a.task} is done')
+        task['section'] = a.section
+        dump(a.repo, data); print(f'ok {a.task} -> {a.section}'); return
     if a.cmd == 'add-task':
         if any(x['id'] == a.task for x in data['tasks']):
             sys.exit(f'task {a.task} already exists')

@@ -102,5 +102,12 @@ class GoalsTests(unittest.TestCase):
         self.assertNotEqual(run('add-task', str(self.repo), 'TASK-010', '--goal', 'NOPE', '--title', 'x').returncode, 0)
 
 
+    def test_section_moves_task_out_of_selection(self):
+        run('fmt', str(self.repo))
+        self.assertIn('ok TASK-002 -> Needs decision', run('section', str(self.repo), 'TASK-002', 'Needs decision').stdout)
+        picks = [p['task']['id'] for p in json.loads(run('next', str(self.repo), '--json').stdout)]
+        self.assertNotIn('TASK-002', picks)
+
+
 if __name__ == '__main__':
     unittest.main()

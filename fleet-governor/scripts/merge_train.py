@@ -117,6 +117,8 @@ def secret_scan(repo, tree):
 
 
 # ---------------------------------------------------------------- gate
+# Fails only on leftover merge-conflict markers; whitespace issues are reported, never blocking.
+CONFLICT_CHECK = "git diff HEAD | grep -nE '^\\+(<{7}|>{7}|={7})( |$)' && exit 1 || exit 0"
 DOC_PATH = re.compile(r'(\.(md|mdx|txt|rst)$)|(^docs/)|(^(goals\.json|\.gitignore|\.repo-docs-drift-ignore)$)|(^\.impeccable/)', re.I)
 
 
@@ -142,10 +144,10 @@ def gate_commands(repo, changed):
     """(commands, source). Docs-only candidates get `git diff --check`; code needs a recognised gate."""
     code = [p for p in changed if not DOC_PATH.search(p)]
     if not code:
-        return ['git diff --check HEAD'], 'docs-only candidate'
+        return [CONFLICT_CHECK], 'docs-only candidate'
     cfg = repo_config(repo)
     if cfg.get('gate'):
-        return list(cfg['gate']) + ['git diff --check HEAD'], '.hermes/merge-train.json'
+        return list(cfg['gate']) + [CONFLICT_CHECK], '.hermes/merge-train.json'
     for doc in ('AGENTS.md', 'CLAUDE.md'):
         f = repo / doc
         if not f.exists():
@@ -172,7 +174,7 @@ def gate_commands(repo, changed):
             uncovered.append('(repo root files)')
     if uncovered:
         return [], f'no gate for changed code in {uncovered}'
-    return cmds + ['git diff --check HEAD'], 'component detection'
+    return cmds + [CONFLICT_CHECK], 'component detection'
 
 
 def worktree(repo, name, tree=None):
@@ -239,6 +241,8 @@ def land(repo, tree, message, ci_wait_min, dry):
         return f'dry-run: would land {commit[:8]}'
     branch = git(repo, 'branch', '--show-current') or 'main'
     sh(['git', '-C', str(repo), 'fetch', '-q', 'origin'])
+    if sh(['git', '-C', str(repo), 'rev-parse', '--verify', '-q', f'origin/{branch}']).returncode:
+        return f'skipped: origin has no {branch} branch (empty repo or different default); first push is an owner decision'
     remote = git(repo, 'rev-parse', f'origin/{branch}', check=False)
     if remote and remote != base and sh(['git', '-C', str(repo), 'merge-base', '--is-ancestor', remote, base]).returncode:
         return f'skipped: origin/{branch} has commits not in local {branch}; reconcile first'
@@ -373,6 +377,8 @@ def train_repo(name, repo, a, log):
             continue
         break  # remaining failures are pre-existing on main
     pre_existing = [c for c, rc, _ in res if rc]
+    ws = sh(['git', '-C', str(repo), 'diff', '--check', 'HEAD', tree]).stdout.count(': trailing whitespace') + \
+        sh(['git', '-C', str(repo), 'diff', '--check', 'HEAD', tree]).stdout.count(': new blank line at EOF')
     msg = (f'chore(merge-train): land verified fleet work {dt.date.today().isoformat()}\n\n'
            f'Daily fleet-governor merge train: {len(take)} paths from the shared worktree.\n'
            f'Gate ({source}) on this exact tree: passed' +
@@ -383,7 +389,8 @@ def train_repo(name, repo, a, log):
     if not a.dry_run and not outcome.startswith(('push failed', 'skipped', 'PR')):
         sh(['git', '-C', str(repo), 'restore', '--staged', '--', *take[:5000]])
         follow_up(repo, held_tests)
-    return f'{outcome}; {len(take)} paths' + (f', held {len(held)}' if held else '')
+    note = f'; {ws} whitespace issue(s) (non-blocking)' if ws else ''
+    return f'{outcome}; {len(take)} paths' + (f', held {len(held)}' if held else '') + note
 
 
 def run(a):
