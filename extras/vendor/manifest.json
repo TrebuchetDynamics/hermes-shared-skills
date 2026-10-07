@@ -31,8 +31,10 @@
         "skills/engineering/prototype",
         "skills/engineering/improve-codebase-architecture",
         "skills/engineering/domain-modeling",
-        "skills/productivity/writing-for-agents"
-      ]
+        "skills/productivity/writing-for-agents",
+        "skills/engineering/implement-spec"
+      ],
+      "overlay": "extras/vendor/mattpocock-overlay.md"
     },
     {
       "name": "i-have-adhd",

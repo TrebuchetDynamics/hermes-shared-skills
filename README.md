@@ -112,7 +112,7 @@ Project-specific skills, such as codebase maps or domain triage, stay in their o
 </details>
 
 <details>
-<summary><b>Vendored third-party skills</b>: 16 curated commands, pinned upstream</summary>
+<summary><b>Vendored third-party skills</b>: 17 curated commands, pinned upstream</summary>
 
 `extras/vendor/manifest.json` pins curated skills from other repositories. `extras/vendor/sync_vendor.py`
 installs them into `vendor/<source>/<skill>/`. That folder is gitignored, so each license stays with its source.
@@ -124,12 +124,17 @@ It refuses names that collide with first-party or Hermes-bundled skills.
 |---|---|
 | pbakaus/impeccable (Apache-2.0) | `/impeccable` (+ fleet overlay) |
 | DietrichGebert/ponytail (MIT) | `/ponytail`, `/ponytail-review` |
-| mattpocock/skills (MIT) | `/grill-with-docs`, `/prototype`, `/improve-codebase-architecture`, `/domain-modeling`, `/writing-for-agents` |
+| mattpocock/skills (MIT) | `/grill-with-docs`, `/prototype`, `/improve-codebase-architecture`, `/domain-modeling`, `/writing-for-agents`, `/implement-spec` |
 | ayghri/i-have-adhd (MIT) | `/i-have-adhd` |
 | cloudflare/security-audit-skill (MIT) | `/security-audit` |
 | obra/superpowers (MIT) | `/receiving-code-review` |
 | cathrynlavery/diagram-design (MIT) | `/diagram-design` |
 | addyosmani/agent-skills (MIT) | `/api-and-interface-design`, `/observability-and-instrumentation`, `/performance-optimization`, `/deprecation-and-migration` |
+
+`/implement-spec` implements an accepted spec's dependency-linked tickets on one integration branch.
+Use it explicitly, with an existing tracker and real implementer Git worktrees. Its
+[Hermes overlay](extras/vendor/mattpocock-overlay.md) preserves native review and requires
+separate authorization for push/PR/deploy actions. Source: [AI Hero](https://www.aihero.dev/skills-implement-spec).
 
 **Deliberately not vendored (2026-10-06 audit):**
 - **Overlaps with skills the fleet already uses:**
