@@ -302,8 +302,8 @@ The backlog must lead to the project's goals, not only collect leftovers. The go
 list lives in repository-root **`goals.json`**, which is machine-readable and the
 source of truth for goal status and a tracked project file: commit it with the docs, never
 gitignore it. `TODO.md` is the human view. Change `goals.json`
-only through `<this-skill-directory>/scripts/goals.py`, or write it and then run
-`goals.py fmt`. Never leave hand-formatted JSON.
+only through `<this-skill-directory>/scripts/goals.py` (`add-task`, `task`, `evidence`, `fmt`,
+`validate`, `render`), or write it and then run `goals.py fmt`. Never leave hand-formatted JSON.
 
 1. **List the goals.** Collect them from PRD goals, requirements and acceptance or
    success criteria; spec items marked planned; test-plan coverage gaps; runbook

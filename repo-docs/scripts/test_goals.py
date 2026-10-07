@@ -92,5 +92,15 @@ class GoalsTests(unittest.TestCase):
         self.assertIn('GOAL-4: unmet goal has no open task', run('validate', str(self.repo)).stdout)
 
 
+    def test_add_task_registers_and_validates(self):
+        run('fmt', str(self.repo))
+        self.assertIn('ok TASK-009 -> GOAL-4 (Now)', run('add-task', str(self.repo), 'TASK-009', '--goal', 'GOAL-4',
+                                                         '--title', 'Follow-up', '--section', 'Now', '--depends-on', 'TASK-001').stdout)
+        self.assertIn('TASK-009', next(g for g in self.data()['goals'] if g['id'] == 'GOAL-4')['tasks'])
+        self.assertEqual(run('validate', str(self.repo)).stdout.strip(), 'ok')
+        self.assertNotEqual(run('add-task', str(self.repo), 'TASK-009', '--goal', 'GOAL-4', '--title', 'dup').returncode, 0)
+        self.assertNotEqual(run('add-task', str(self.repo), 'TASK-010', '--goal', 'NOPE', '--title', 'x').returncode, 0)
+
+
 if __name__ == '__main__':
     unittest.main()

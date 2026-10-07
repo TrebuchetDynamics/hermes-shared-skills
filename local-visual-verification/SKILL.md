@@ -29,6 +29,20 @@ Load before claiming a front-end change is done — a new component, a restyle, 
 7. **Judge at the size it ships, then fix everything the round shows in one batch and confirm at most once.** Look at the actual pixels, not the markup: an element that is legible enlarged can be an unreadable blur at its real size.
 8. **Stop after the confirmation round.** Keep the harness in a scratch directory, kill the server, and confirm the port is free.
 
+## Waydroid native app smoke
+
+For a selected Waydroid test target, try `waydroid app install <qa.apk>` and
+`waydroid app launch <qa-package>` before treating unauthorized ADB as preventing
+all testing. The native platform service can install and launch without ADB.
+Use an isolated QA package so the user's paired application is preserved.
+Read back the installed package list and check the exact QA process after launch.
+The CLI's install handler may ignore the platform installation return value, so
+exit 0 alone does not prove installation or that the latest APK replaced an
+existing copy. Establish installed-byte identity separately when claiming it.
+A running process is launch evidence, not rendered UI, interaction, connection
+or chat evidence. Headless Weston can refuse screen capture with `unauthorized`;
+do not bypass compositor or Android debugging permission to get a screenshot.
+
 ## When the page cannot render here
 
 Report the gap with its concrete cause rather than a partial claim, and verify the artifact a different way if you can:

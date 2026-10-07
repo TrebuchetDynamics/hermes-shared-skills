@@ -112,10 +112,11 @@ Use /autogoal or an explicit request to choose useful project work autonomously.
    `unresolved_blocker` names a real owner decision, ask it and record it instead of
    returning `[SILENT]` again. Read replies back (chat / `session_search`) at the
    start of every run and apply them.
-10. **Ownership.** A workspace is owned only by a kanban worker on a card, an exact
-    file claim, or a Hermes session active in that repo in the last 2 hours. A
-    long-running interactive `claude`/`codex` TTY owns only the files currently
-    dirty in its cwd, not the whole repository. Dirty files that match this
+10. **Ownership.** A whole workspace is owned only by a kanban worker on a card or an
+    exact file claim. An interactive session active in the repo (Hermes CLI or Telegram
+    chat, a `claude`/`codex` TTY) owns only the files it touched recently: dirty files
+    modified in the last 2 hours. Dispatch tasks whose scope is disjoint from those files,
+    listing them as exclusions in the contract. Never go silent just because a chat is open. Dirty files that match this
     profile's own completed or approved card diffs are this profile's work: build
     on them and list them in the commit handoff. Do not freeze the repo over them.
 11. **Model refusals.** A provider safety refusal or crash is infrastructure: reword

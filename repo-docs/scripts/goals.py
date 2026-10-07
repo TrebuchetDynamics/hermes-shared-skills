@@ -9,6 +9,7 @@ Agents change goals.json only through these commands, never by hand-editing JSON
   goals.py next <repo> [--json]                  next eligible open task (dependencies satisfied)
   goals.py render <repo>                         rewrite TODO.md's goal-coverage block from goals.json
   goals.py task <repo> <TASK> <open|in_progress|done>
+  goals.py add-task <repo> <TASK> --goal <GOAL> --title <text> [--section Now|Next|Needs decision] [--depends-on T1,T2]
   goals.py evidence <repo> <GOAL> --kind executed|inspection --ref <cmd/path> --result pass|fail [--ran-at ISO]
 
 Rule (the met rule): a goal is `met` only with at least one evidence entry of kind `executed`
@@ -165,6 +166,10 @@ def main():
         sub.add_parser(name).add_argument('repo')
     n = sub.add_parser('next'); n.add_argument('repo'); n.add_argument('--json', action='store_true')
     t = sub.add_parser('task'); t.add_argument('repo'); t.add_argument('task'); t.add_argument('status', choices=TASK_STATUS)
+    n2 = sub.add_parser('add-task'); n2.add_argument('repo'); n2.add_argument('task')
+    n2.add_argument('--goal', required=True); n2.add_argument('--title', required=True)
+    n2.add_argument('--section', default='Next', choices=[s for s in SECTIONS if s != 'Done'])
+    n2.add_argument('--depends-on', default='')
     e = sub.add_parser('evidence'); e.add_argument('repo'); e.add_argument('goal')
     e.add_argument('--kind', choices=KINDS, required=True); e.add_argument('--ref', required=True)
     e.add_argument('--result', choices=RESULTS, required=True); e.add_argument('--ran-at', default='')
@@ -199,6 +204,19 @@ def main():
             print(f"WARNING: {goal['id']} is still {goal['status']} with no open task. Record the check you ran: "
                   f"goals.py evidence {a.repo} {goal['id']} --kind executed --ref \"<command>\" --result pass")
         print('ok'); return
+    if a.cmd == 'add-task':
+        if any(x['id'] == a.task for x in data['tasks']):
+            sys.exit(f'task {a.task} already exists')
+        goal = next((x for x in data['goals'] if x['id'] == a.goal), None) or sys.exit(f'unknown goal {a.goal}')
+        deps = [d for d in a.depends_on.split(',') if d]
+        known = {x['id'] for x in data['tasks']}
+        missing = [d for d in deps if d not in known]
+        if missing:
+            sys.exit(f'unknown depends_on task(s): {missing}')
+        data['tasks'].append({'id': a.task, 'goal': a.goal, 'title': a.title, 'status': 'open',
+                              'section': a.section, 'depends_on': deps})
+        goal['tasks'] = sorted(set(goal.get('tasks', []) + [a.task]))
+        dump(a.repo, data); print(f'ok {a.task} -> {a.goal} ({a.section})'); return
     if a.cmd == 'evidence':
         goal = next((x for x in data['goals'] if x['id'] == a.goal), None) or sys.exit(f'unknown goal {a.goal}')
         entry = {'kind': a.kind, 'ref': a.ref, 'result': a.result}
