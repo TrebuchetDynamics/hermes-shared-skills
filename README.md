@@ -43,7 +43,22 @@ flowchart LR
 5. **`fleet-governor`** (default profile) unsticks cards, routes idle profiles and reports open questions
    and merge-train results.
 
+## Documentation
+
+- [Product requirements](PRD.md): scope, acceptance, and current proof boundaries.
+- [Technical specification](spec.md): components, ledger, setup, and failure behavior.
+- [Test plan](test-plan.md): offline checks and remaining runtime coverage.
+- [Local operations runbook](runbook.md): profile wiring, diagnosis, and recovery limits.
+- [Changelog](CHANGELOG.md): notable Unreleased changes, not invented releases.
+- [Goal backlog](TODO.md), [goal ledger](goals.json), and [owner questions](BLOCKERS.md).
+
+No repository-owned HTTP API requires OpenAPI. No new architecture decision requires an ADR in this pass.
+
 ## Quick start
+
+Prerequisites: an installed Hermes CLI, Bash, Python 3.12+, and an existing project workspace.
+The setup commands below change profile configuration and create jobs. Bootstrap also disables approval
+and protected-instruction gates. Review the [runbook](runbook.md) before running them.
 
 ```bash
 curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash        # Hermes itself, if missing
@@ -69,9 +84,16 @@ git clone https://github.com/TrebuchetDynamics/hermes-shared-skills ~/.hermes/sh
   Add `--autogoal 15m` for busy profiles, or `--no-cron` to skip the jobs.
 - **`install.sh --profiles a,b`** re-wires existing profiles and is idempotent. Options: `--disable-fleet`,
   `--telegram-menu`, `--soul`, `--allow-all`, `--prune`, `--dry-run`.
-- **Updates:** `git -C ~/.hermes/shared-skills pull`. Every profile reads this folder live.
+- Updates: pull this repository through the scoped git-pull-merge workflow. Every profile resolves
+  the same canonical files on disk; fresh-session discovery verifies the new catalog. Skill indexes
+  and already-loaded bodies can remain cached in existing sessions. Do not rewrite their history or
+  restart healthy workers merely to propagate wording.
 
 The paths assume the default location `~/.hermes/shared-skills`.
+OMH is an optional third-party integration installed separately through its own instructions.
+Neither `bootstrap.sh` nor `new_profile.sh` installs OMH. Existing provisioned profiles do not prove
+fresh-machine provisioning. Profile wiring, fresh-session discovery, native worker execution, and
+actual message delivery each need their own verification receipt.
 Use `hermes skills tap add TrebuchetDynamics/hermes-shared-skills` to install individual skills
 through the Hermes hub instead.
 
@@ -215,7 +237,9 @@ and helper-script tests. Vendored upstream content and hidden directories are ex
 
 `repo-docs/scripts/test_goal_gap_regression.py` and `hard-blockers/scripts/test_repo_docs.py` are
 behavioral regressions that call a real model through `hermes chat`. They are explicitly excluded
-from the offline runner. Run them manually after policy changes. New model-backed tests must
+from the offline runner. Run them manually after policy changes only with explicit authorization
+for model-backed calls. Passing offline suites does not prove live skill adoption, provider execution,
+Telegram delivery, remote landing, or a whole fleet goal. New model-backed tests must
 also be added to `MODEL_TESTS` in `scripts/check.py` before using the offline runner.
 
 ## Credits and license
