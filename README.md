@@ -1,26 +1,97 @@
 # hermes-shared-skills
 
-Shared skills, and therefore slash commands, for a fleet of [Hermes Agent](https://github.com/NousResearch/hermes-agent)
-profiles. In Hermes every skill is a command: `/autogoal`, `/repo-docs` (Telegram: `/repo_docs`), and so on.
-Profiles, sessions and credentials are not part of this repo.
+[![test](https://github.com/TrebuchetDynamics/hermes-shared-skills/actions/workflows/test.yml/badge.svg)](https://github.com/TrebuchetDynamics/hermes-shared-skills/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Skills / commands
+**Skills and slash commands that let a fleet of [Hermes Agent](https://github.com/NousResearch/hermes-agent)
+profiles keep shipping on their own.** The fleet turns docs into goals and goals into tasks, works and
+reviews the tasks, and lands the result on `main` every day. When it needs you, it asks and keeps going.
 
-Fleet workflow:
+In Hermes every skill is a command (`/autogoal`; Telegram: `/repo_docs`). This repository holds only the
+shared skills and the setup around them. Profiles, sessions and credentials stay on your machine.
+
+- **Docs that drive the backlog.** `/repo-docs` keeps README, PRD, spec, test plan, runbook and changelog
+  current, and turns every unmet goal into a task in `goals.json`.
+- **Autonomous, bounded work.** `/autogoal` picks the next goal-linked task and hands it to a 50-turn
+  goal worker. The picker itself never writes code.
+- **Proof, not claims.** A goal counts as `met` only after an executed, passing check.
+- **Main stays current.** A daily merge train gates the worktree's verified work and lands it, through
+  a PR when the branch requires one.
+- **Ask, don't block.** Questions go to you as a questionnaire, and reversible defaults apply meanwhile.
+
+## How it works
+
+```mermaid
+flowchart LR
+  D["/repo-docs<br/>docs → goals.json"] --> P["/autogoal<br/>goals.py next"]
+  P --> W["goal worker<br/>50 turns, code + tests"]
+  W --> R["native review<br/>Definition of done"]
+  R --> M["merge-train-daily<br/>gate → main"]
+  M -. new commits .-> D
+  W -. "goals.py task / evidence" .-> D
+```
+
+1. **`repo-docs-on-change`** (cron, monitor-gated) builds or maintains the core docs and keeps
+   `goals.json`: goals, status, evidence and tasks, ordered by product priority. It runs only when commits,
+   finished cards, doc drift or ledger errors appear.
+2. **`autogoal`** (cron) runs `goals.py next`, writes a contract from that task and dispatches it with
+   `start_goal.py`. Its budget is about 30 tool calls per run.
+3. **The worker** implements and tests the change, then records completion and evidence with `goals.py`.
+   Handing the card to review is the goal's last step.
+4. **`merge-train-daily`** (03:30, no model) gates the exact candidate tree in an isolated worktree and lands
+   it on `main`. A failure that also happens on `main` doesn't block. New failing tests are held back as tasks.
+5. **`fleet-governor`** (default profile) unsticks cards, routes idle profiles and reports open questions
+   and merge-train results.
+
+## Quick start
+
+```bash
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash        # Hermes itself, if missing
+git clone https://github.com/TrebuchetDynamics/hermes-shared-skills ~/.hermes/shared-skills
+~/.hermes/shared-skills/bootstrap.sh                                         # wire the default profile
+~/.hermes/shared-skills/extras/install/new_profile.sh myproject ~/git/myproject --deliver telegram:<chat_id>
+```
+
+- **`bootstrap.sh`** wires the default profile:
+  - adds this folder to `skills.external_dirs`;
+  - installs the monitor, cleanup and merge-train wrappers;
+  - pins the commands in the Telegram menu and adds the SOUL snippets;
+  - turns off approval prompts and prunes unused skills;
+  - installs the vendored skills;
+  - schedules `merge-train-daily` and `scratch-cleanup-weekly`.
+
+  Pass `--no-vendor` to skip the vendored skills.
+- **`new_profile.sh`** creates or adopts a project profile:
+  - sets its `terminal.cwd`;
+  - wires it like the default profile, with the fleet skills disabled;
+  - creates its `repo-docs-on-change` and `autogoal` cron jobs from `extras/cron/`.
+
+  Add `--autogoal 15m` for busy profiles, or `--no-cron` to skip the jobs.
+- **`install.sh --profiles a,b`** re-wires existing profiles and is idempotent. Options: `--disable-fleet`,
+  `--telegram-menu`, `--soul`, `--allow-all`, `--prune`, `--dry-run`.
+- **Updates:** `git -C ~/.hermes/shared-skills pull`. Every profile reads this folder live.
+
+The paths assume the default location `~/.hermes/shared-skills`.
+Use `hermes skills tap add TrebuchetDynamics/hermes-shared-skills` to install individual skills
+through the Hermes hub instead.
+
+## Commands
+
+### Fleet workflow
 
 | Command | What it does |
 |---|---|
 | `/autogoal` | Picks the next goal-linked task (`goals.py next`) and hands it to a native 50-turn goal worker. The picker never implements. |
-| `/repo-docs` | Builds or maintains the core docs, keeps `goals.json`, and turns every unmet goal into a TODO.md task. |
-| `/git-commit-push` | Ships local changes safely in shared worktrees: stage → gate → push, verify the remote. |
-| `/git-pull-merge` | Brings remote or branch changes in safely: fetch, check overlap with others' dirty work, fast-forward or merge (never rebase/force), resolve conflicts, re-gate. |
+| `/repo-docs` | Builds or maintains the core docs, keeps `goals.json`, and turns every unmet goal into a task. |
+| `/git-commit-push` | Ships local changes safely in shared worktrees: stage → gate → push, then verify the remote. |
+| `/git-pull-merge` | Brings remote or branch changes in safely: fetch, check overlap with others' dirty work, fast-forward or merge (never rebase or force), resolve conflicts, re-gate. |
 | `/lgtm` | Resolves a short approval against the latest checkpoint without widening scope. |
-| `/grill-me` | Stress-tests a plan; also the questionnaire format agents use whenever they need the user. |
-| `/hard-blockers` | BLOCKERS.md as the owner's open-questions ledger (defaults applied, work continues). |
-| `/fleet-governor`, `/fleet-blockers`, `/fleet-status` | Default-profile fleet coordination (disabled in project profiles), including the daily **merge train** that lands verified worktree work on each repo's main (`fleet-governor/references/merge-train.md`). |
-| `/impeccable` | Frontend design skill, installed from upstream with a Hermes overlay (see NOTICE). |
+| `/grill-me` | Stress-tests a plan. It is also the questionnaire format agents use whenever they need the user. |
+| `/hard-blockers` | Keeps `BLOCKERS.md` as the owner's open-questions ledger; defaults apply and work continues. |
+| `/fleet-governor`, `/fleet-blockers`, `/fleet-status` | Default-profile coordination, including the daily [merge train](fleet-governor/references/merge-train.md). Disabled in project profiles. |
 
-Engineering practice, written by the fleet's agents from real incidents:
+<details>
+<summary><b>Engineering practice</b>: skills the fleet's agents wrote from real incidents</summary>
 
 | Command | Use when |
 |---|---|
@@ -36,38 +107,18 @@ Engineering practice, written by the fleet's agents from real incidents:
 | `/understand-anything-hermes` | installing and running Understand-Anything in a profile |
 | `/audio-generation` | creating spoken audio |
 
-Project-specific skills (codebase maps, domain triage) stay in their own profiles.
+Project-specific skills, such as codebase maps or domain triage, stay in their own profiles.
 
-Key design rules shared by these skills:
-- **Ask, don't block.** Needing the user means sending a questionnaire and applying reversible defaults, never pausing a goal.
-- **The met rule.** A goal in `goals.json` is `met` only with an executed, passing check (`repo-docs/scripts/goals.py`).
-- **The review handoff is a goal's last step.** Approval comes afterwards (see `extras/soul/review-handoff.md`).
+</details>
 
-## Install (new machine or fresh ~/.hermes)
-
-```bash
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash        # Hermes itself, if missing
-git clone https://github.com/TrebuchetDynamics/hermes-shared-skills ~/.hermes/shared-skills
-~/.hermes/shared-skills/bootstrap.sh                        # default profile + weekly cleanup
-~/.hermes/shared-skills/extras/new_profile.sh myproject ~/git/myproject --deliver telegram:<chat_id>
-```
-
-- `bootstrap.sh` wires the default profile: `skills.external_dirs`, monitor, cleanup and merge-train wrappers,
-  Telegram menu pins, and the SOUL snippets. It also schedules `merge-train-daily` and `scratch-cleanup-weekly`.
-- `new_profile.sh` creates or adopts a project profile, sets `terminal.cwd`, wires it (with the fleet
-  skills disabled) and creates its `repo-docs-on-change` and `autogoal` cron jobs from `extras/cron/`.
-  Use `--autogoal 15m` for busy profiles and `--no-cron` to skip the jobs.
-- `install.sh --profiles a,b [--disable-fleet] [--telegram-menu] [--soul] [--dry-run]` re-wires existing
-  profiles. It is idempotent.
-- Updates: `git -C ~/.hermes/shared-skills pull`. Every profile reads the folder live.
-
-## Vendored third-party skills
+<details>
+<summary><b>Vendored third-party skills</b>: 16 curated commands, pinned upstream</summary>
 
 `extras/vendor/manifest.json` pins curated skills from other repositories. `extras/vendor/sync_vendor.py`
-installs them into `vendor/<source>/<skill>/` (gitignored, so their licenses stay with them).
-Each one gets a short Hermes note that maps other harnesses' tool names to Hermes tools and
-states that fleet rules win. `bootstrap.sh` runs it; re-run it any time, or with `--pin` to bump
-to upstream HEAD. The sync refuses names that collide with first-party or Hermes-bundled skills.
+installs them into `vendor/<source>/<skill>/`. That folder is gitignored, so each license stays with its source.
+Each skill gets a short Hermes note that maps other harnesses' tool names to Hermes tools and says that
+fleet rules win. `bootstrap.sh` runs the sync. Re-run it any time, or with `--pin` to move to upstream HEAD.
+It refuses names that collide with first-party or Hermes-bundled skills.
 
 | Source (license) | Commands |
 |---|---|
@@ -80,20 +131,50 @@ to upstream HEAD. The sync refuses names that collide with first-party or Hermes
 | cathrynlavery/diagram-design (MIT) | `/diagram-design` |
 | addyosmani/agent-skills (MIT) | `/api-and-interface-design`, `/observability-and-instrumentation`, `/performance-optimization`, `/deprecation-and-migration` |
 
-Deliberately not vendored: skills that overlap ones the fleet already uses (2026-10-06 audit:
-code-simplification and ponytail-audit/debt vs ponytail and omh-tech-debt-audit; security-and-hardening vs
-security-audit; verification-before-completion vs omh-verification-gate and the met rule;
-ci-cd vs omh-automation-blueprint; browser-testing vs local-visual-verification and omh-visual-qa;
-context-engineering vs writing-for-agents; writing-skills vs hermes-agent-skill-authoring;
-session-handoff vs the core /handoff command), duplicates of bundled or first-party skills (humanizer, TDD,
-systematic debugging, code review, grill-me), skills that overlap autogoal, repo-docs or
-git-commit-push, skills that force approval gates (superpowers' using-superpowers and
-brainstorming), and graphify (a CLI, not a skill; understand-anything-hermes covers it).
+**Deliberately not vendored (2026-10-06 audit):**
+- **Overlaps with skills the fleet already uses:**
+  - code-simplification, ponytail-audit and ponytail-debt (ponytail, omh-tech-debt-audit);
+  - security-and-hardening (security-audit);
+  - verification-before-completion (omh-verification-gate and the met rule);
+  - ci-cd (omh-automation-blueprint);
+  - browser-testing (local-visual-verification, omh-visual-qa);
+  - context-engineering (writing-for-agents);
+  - writing-skills (hermes-agent-skill-authoring);
+  - session-handoff (the core `/handoff` command).
+- **Duplicates of bundled or first-party skills:** humanizer, TDD, systematic debugging, code review, grill-me.
+- **Overlaps with autogoal, repo-docs or git-commit-push.**
+- **Skills that force approval gates:** superpowers' using-superpowers and brainstorming.
+- **graphify:** a CLI rather than a skill; understand-anything-hermes covers it.
 
-## Pruning unused skills
+</details>
 
-`install.sh --prune` (run by bootstrap and new_profile) adds every name in `extras/disabled-skills.txt` to the
-profile's `skills.disabled`: Hermes-bundled and omh skills that were never used or viewed in ~500 sessions
+## Design rules
+
+These rules are shared by the skills above and carried into every profile through `extras/soul/`.
+
+- **Ask, don't block.** Needing the user means a questionnaire and a reversible default, never a paused goal
+  ([`ask-dont-block.md`](extras/soul/ask-dont-block.md)).
+- **The met rule.** A goal is `met` only with an executed, passing check recorded through `goals.py`
+  ([`goal-ledger.md`](extras/soul/goal-ledger.md)).
+- **The review handoff is a goal's last step.** Approval comes afterwards, which avoids a circular review gate
+  ([`review-handoff.md`](extras/soul/review-handoff.md)).
+- **Scratch hygiene.** Workers keep scratch out of `~/.cache` and clean up build output. A weekly job removes
+  leftovers ([`scratch-hygiene.md`](extras/soul/scratch-hygiene.md)).
+
+## Operating the fleet
+
+| Cron job | Profile | Schedule | What it does |
+|---|---|---|---|
+| `repo-docs-on-change` | each project | every 10 min, model only on real change | docs, `goals.json`, drift fixes |
+| `autogoal` | each project | hourly (or 15 min) | pick and dispatch one goal-linked task |
+| `merge-train-daily` | default | 03:30, no model | gate and land verified worktree work on `main` |
+| `scratch-cleanup-weekly` | default | Sun 04:17, no model | delete worker scratch older than 7 days |
+
+Prompt templates and placeholders: [`extras/cron/`](extras/cron/README.md).
+Merge-train details and opt-out: [`fleet-governor/references/merge-train.md`](fleet-governor/references/merge-train.md).
+
+**Pruning.** `install.sh --prune` adds every name in `extras/install/disabled-skills.txt` to the profile's
+`skills.disabled`. Those are Hermes-bundled and omh skills that nobody used or viewed in about 500 sessions
 across 8 profiles (2026-10-06 audit). Each enabled skill costs a line in every prompt. To re-enable one,
 delete its line and remove it from the profile's `skills.disabled`.
 
@@ -105,11 +186,13 @@ shared/COMMON-CONTRACT.md                     contract several skills follow
 extras/monitors/      cron monitor scripts (skip the model when nothing changed)
 extras/cron/          cron prompt templates
 extras/soul/          SOUL.md snippets every worker must see
-extras/impeccable/    upstream sync script + Hermes overlay
-extras/maintenance/   scratch_cleanup.py (weekly, no-agent cron; deletes worker scratch older than 7 days)
-extras/new_profile.sh create + wire a project profile with its cron jobs
+extras/vendor/        pinned third-party skill manifest + sync
+extras/impeccable/    Hermes overlay for impeccable
+extras/maintenance/   scratch cleanup and merge-train cron entry points
+extras/install/       install helper, new_profile.sh, disabled-skills.txt
 bootstrap.sh          one-shot setup for a new machine
 install.sh            per-profile wiring
+scripts/check.py      offline test and lint runner (CI)
 ```
 
 ## Tests
@@ -129,3 +212,10 @@ and helper-script tests. Vendored upstream content and hidden directories are ex
 behavioral regressions that call a real model through `hermes chat`. They are explicitly excluded
 from the offline runner. Run them manually after policy changes. New model-backed tests must
 also be added to `MODEL_TESTS` in `scripts/check.py` before using the offline runner.
+
+## Credits and license
+
+MIT, Copyright (c) 2026 Trebuchet Dynamics (see [LICENSE](LICENSE)). `grill-me`, `lgtm`, `repo-docs`,
+`git-commit-push` and `shared/COMMON-CONTRACT.md` are adapted from
+[TrebuchetDynamics/pi-toolset](https://github.com/TrebuchetDynamics/pi-toolset). Vendored skills keep their
+own licenses; see [NOTICE.md](NOTICE.md).

@@ -5,3 +5,4 @@ __pycache__/
 .DS_Store
 # Third-party skills installed by extras/vendor/sync_vendor.py (pinned in extras/vendor/manifest.json)
 /vendor/
+.pytest_cache/
