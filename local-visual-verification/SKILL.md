@@ -34,6 +34,11 @@ Load before claiming a front-end change is done — a new component, a restyle, 
 For a selected Waydroid test target, try `waydroid app install <qa.apk>` and
 `waydroid app launch <qa-package>` before treating unauthorized ADB as preventing
 all testing. The native platform service can install and launch without ADB.
+Pass `--` between `waydroid shell` and the Android command so Android flags
+such as `rm -f` are not parsed as Waydroid flags. Keep failure diagnostics
+stage-specific and sanitized; a cleanup failure must not replace the original
+failure. Read the installed handler before trusting exit codes: some Waydroid
+shell handlers do not propagate the Android subprocess status.
 Use an isolated QA package so the user's paired application is preserved.
 Read back the installed package list and check the exact QA process after launch.
 The CLI's install handler may ignore the platform installation return value, so

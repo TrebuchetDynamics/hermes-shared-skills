@@ -37,6 +37,7 @@ class InstallTests(unittest.TestCase):
         self.repo.mkdir()
         for rel in ('extras/monitors/repo_docs_monitor.py',
                     'extras/monitors/autogoal_monitor.py',
+                    'extras/monitors/autogoal_gate.py',
                     'extras/maintenance/scratch_cleanup.py',
                     'extras/maintenance/merge_train_daily.py'):
             p = self.repo / rel

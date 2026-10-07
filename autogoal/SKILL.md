@@ -20,8 +20,7 @@ Use /autogoal or an explicit request to choose useful project work autonomously.
 1. **Step 0 — reconcile, never fingerprint-exit.** Resolve workspace instructions,
    current human decisions, journal and live ownership before selecting. Fingerprints
    may reuse scoped evidence; they NEVER authorize skipping discovery or returning
-   early. Disable change-only cron monitors on autogoal jobs through the supported
-   cron edit interface, preserving schedule, model, delivery and enabled state.
+   early. Disable change-only fingerprint monitors on autogoal jobs (they let idle profiles stop exploring); the only allowed gate is `autogoal_gate.py`, which skips a tick only while this profile's own card is running or ready and nothing finished (preserving schedule, model, delivery and enabled state).
    Reconcile new terminal results, then CONTINUE selection in the same occurrence.
    A completed card is not a stop condition. A genuinely live worker wins: reconcile
    its exact run; never enqueue overlapping work or steal its lease.

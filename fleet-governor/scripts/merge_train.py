@@ -85,6 +85,8 @@ def plan(repo, min_age_min):
         status, path = line[:2], line[3:]
         if path.endswith('/'):
             held.append((path, 'nested repository or worktree')); continue
+        if (repo / path / '.git').exists():
+            held.append((path, 'submodule pointer (land manually after its commit is pushed upstream)')); continue
         if status.startswith('R') or status.startswith('C'):
             held.append((path, 'rename/copy (land manually)')); continue
         f = repo / path
@@ -115,7 +117,7 @@ def secret_scan(repo, tree):
 
 
 # ---------------------------------------------------------------- gate
-DOC_PATH = re.compile(r'(\.(md|mdx|txt|rst)$)|(^docs/)|(^(goals\.json|\.gitignore)$)|(^\.impeccable/)', re.I)
+DOC_PATH = re.compile(r'(\.(md|mdx|txt|rst)$)|(^docs/)|(^(goals\.json|\.gitignore|\.repo-docs-drift-ignore)$)|(^\.impeccable/)', re.I)
 
 
 def component_gate(d, q):
