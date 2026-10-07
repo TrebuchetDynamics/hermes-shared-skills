@@ -15,8 +15,8 @@ shared skills and the setup around them. Profiles, sessions and credentials stay
 - **Autonomous, bounded work.** `/autogoal` picks the next goal-linked task and hands it to a 50-turn
   goal worker. The picker itself never writes code.
 - **Proof, not claims.** A goal counts as `met` only after an executed, passing check.
-- **Main stays current.** A daily merge train gates the worktree's verified work and lands it, through
-  a PR when the branch requires one.
+- **Main stays current.** A daily merge train merges finished card branches, then gates and lands the
+  worktree's verified work (submodules first), through a PR when the branch requires one.
 - **Ask, don't block.** Questions go to you as a questionnaire, and reversible defaults apply meanwhile.
 
 ## How it works
@@ -38,8 +38,8 @@ flowchart LR
    `start_goal.py`. Its budget is about 30 tool calls per run.
 3. **The worker** implements and tests the change, then records completion and evidence with `goals.py`.
    Handing the card to review is the goal's last step.
-4. **`merge-train-daily`** (03:30, no model) gates the exact candidate tree in an isolated worktree and lands
-   it on `main`. A failure that also happens on `main` doesn't block. New failing tests are held back as tasks.
+4. **`merge-train-daily`** (03:30, no model) merges done cards' `agent/*` branches, then gates the exact
+   candidate tree in an isolated worktree and lands it on `main`. A failure that also happens on `main` doesn't block. New failing tests are held back as tasks.
 5. **`fleet-governor`** (default profile) unsticks cards, routes idle profiles and reports open questions
    and merge-train results.
 
@@ -167,7 +167,7 @@ These rules are shared by the skills above and carried into every profile throug
 |---|---|---|---|
 | `repo-docs-on-change` | each project | every 10 min, model only on real change | docs, `goals.json`, drift fixes |
 | `autogoal` | each project | hourly (or 15 min) | pick and dispatch one goal-linked task |
-| `merge-train-daily` | default | 03:30, no model | gate and land verified worktree work on `main` |
+| `merge-train-daily` | default | 03:30, no model | merge done card branches, gate and land worktree work on `main` |
 | `scratch-cleanup-weekly` | default | Sun 04:17, no model | delete worker scratch older than 7 days |
 
 Prompt templates and placeholders: [`extras/cron/`](extras/cron/README.md).

@@ -13,6 +13,15 @@ worktree unless something lands it. The merge train does that once a day, determ
 
 ## Per repo
 
+0. **Agent branches first.** Workers in isolated worktrees (polymarket's `.worktrees/`, for example)
+   deliver only on `agent/<profile>/<card>` branches, which nothing else merges. The train merges each
+   branch whose kanban card is `done`, oldest first, with real merge commits (card history kept).
+   - **Skipped and counted:** already on `main`; card not done; older than 14 days; touches a file
+     that is uncommitted in the shared worktree (the worktree phase owns those).
+   - **Gate:** the merged tree, the same way as below. A new failure splits the batch in half until
+     the failing branches are isolated; the rest land. Conflicting or failing branches are listed.
+   - **Sync:** landed files are checked out into the shared worktree so it doesn't show them reverted.
+   - Branches are never deleted, rebased or rewritten. Opt out with `{"branches": false}`.
 1. **Plan:** dirty, non-ignored paths, minus files modified in the last 30 min (live work),
    nested repos, files over 5 MB and secret-looking paths. A diff with secret-looking content aborts.
 2. **Gate:** in an isolated worktree on exactly the candidate tree, with `flutter pub get`, plus
@@ -38,5 +47,7 @@ worktree unless something lands it. The merge train does that once a day, determ
   block to its AGENTS.md (an implementation slice, not an owner question).
 - **PR left open on a new failing check:** route a fix card to that profile.
 - Opt a repo out with `<repo>/.hermes/merge-train.json`: `{"enabled": false}`.
+- **Branches listed as conflicting or failing the gate:** route a card to that profile to merge the
+  branch by hand with `git-pull-merge` (or close the card's work as superseded).
 - Manual run: `python3 ~/.hermes/shared-skills/fleet-governor/scripts/merge_train.py run [--profiles x]
   [--plan-only | --dry-run]`.

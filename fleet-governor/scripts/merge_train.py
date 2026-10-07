@@ -2,6 +2,7 @@
 """Daily merge train: land verified fleet work from each project repo's shared worktree onto main.
 
   merge_train.py run [--profiles a,b] [--plan-only] [--dry-run] [--min-age-min 30] [--ci-wait-min 90]
+                    [--branch-max-age-days 14]
   merge_train.py launch [...same args]     # detached background run (for the cron wrapper); prints nothing
 
 Per project profile (workspace = terminal.cwd in its config.yaml):
@@ -16,6 +17,13 @@ Per project profile (workspace = terminal.cwd in its config.yaml):
             when every failing check also fails on main. Never force-pushes or rewrites history.
  4. report - ~/.hermes/fleet-governor/merge-train/<date>.md (+ stdout for `run`).
 
+Branch phase (runs first): workers that run in isolated worktrees deliver on agent/<profile>/<task>
+branches. A branch whose kanban card is done is merged (a real merge commit, history kept) when it is
+not already on main or in the shared worktree, merges without conflicts, and touches no uncommitted
+worktree file. The merged result is gated the same way; on a new failure the batch is split in half
+until the failing branches are isolated and reported. Landed files are synced into the shared
+worktree so it never shows them as reverted. Branches are never deleted or rewritten.
+
 Gate source, first match wins: <repo>/.hermes/merge-train.json {"enabled", "gate": [...]};
 a fenced bash block under a "Complete gate"/"Merge gate" heading in AGENTS.md or CLAUDE.md;
 per-component detection for changed top-level dirs (Flutter, Go, Node test script, Python pytest).
@@ -23,11 +31,13 @@ No gate found -> the repo is reported and not landed.
 """
 import argparse
 import datetime as dt
+import fcntl
 import fnmatch
 import json
 import os
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -37,6 +47,7 @@ from pathlib import Path
 HOME = Path(os.environ.get('HERMES_HOME') or Path.home() / '.hermes')
 REPORT_DIR = HOME / 'fleet-governor' / 'merge-train'
 SCRATCH = HOME / 'cache' / 'scratch' / 'merge-train'
+KANBAN = HOME / 'kanban.db'
 GOALS_PY = Path(__file__).resolve().parents[2] / 'repo-docs' / 'scripts' / 'goals.py'
 SECRET_PATHS = ('.env', '.env.*', '*.pem', '*.key', '*.p12', '*.jks', '*.keystore', 'id_rsa*', '*credentials*.json')
 SECRET_TEXT = re.compile(r'BEGIN [A-Z ]*PRIVATE KEY|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|sk-or-v1-[A-Za-z0-9]{30,}'
@@ -86,7 +97,12 @@ def plan(repo, min_age_min):
         if path.endswith('/'):
             held.append((path, 'nested repository or worktree')); continue
         if (repo / path / '.git').exists():
-            held.append((path, 'submodule pointer (land manually after its commit is pushed upstream)')); continue
+            why = submodule_pointer_hold(repo, path)
+            if why:
+                held.append((path, why))
+            else:
+                take.append(path)
+            continue
         if status.startswith('R') or status.startswith('C'):
             held.append((path, 'rename/copy (land manually)')); continue
         f = repo / path
@@ -99,6 +115,27 @@ def plan(repo, min_age_min):
                 held.append((path, f'modified < {min_age_min} min ago (live work)')); continue
         take.append(path)
     return take, held
+
+
+def submodule_pointer_hold(repo, path):
+    """None when the submodule's checked-out commit moved and is on its origin; else why it is held."""
+    sub = repo / path
+    head = git(sub, 'rev-parse', 'HEAD', check=False)
+    recorded = git(repo, 'rev-parse', f'HEAD:{path}', check=False)
+    if not head or head == recorded:
+        return 'submodule has only uncommitted content (landed by its own train pass)'
+    if not git(sub, 'branch', '-r', '--contains', head, check=False):
+        return 'submodule pointer not pushed upstream yet'
+    return None
+
+
+def targets(name, repo):
+    """Submodules first (so their pushed commits can be pointed to), then the repo itself."""
+    for line in git(repo, 'submodule', 'status', check=False).splitlines():
+        parts = line[1:].split()
+        if len(parts) >= 2 and (repo / parts[1] / '.git').exists():
+            yield f'{name}-{parts[1].replace("/", "-")}', repo / parts[1]
+    yield name, repo
 
 
 def build_tree(repo, paths, index):
@@ -142,7 +179,8 @@ def component_gate(d, q):
 
 def gate_commands(repo, changed):
     """(commands, source). Docs-only candidates get `git diff --check`; code needs a recognised gate."""
-    code = [p for p in changed if not DOC_PATH.search(p)]
+    # Submodule pointers were gated in the submodule's own pass.
+    code = [p for p in changed if not DOC_PATH.search(p) and not (repo / p / '.git').exists()]
     if not code:
         return [CONFLICT_CHECK], 'docs-only candidate'
     cfg = repo_config(repo)
@@ -177,13 +215,13 @@ def gate_commands(repo, changed):
     return cmds + [CONFLICT_CHECK], 'component detection'
 
 
-def worktree(repo, name, tree=None):
+def worktree(repo, name, tree=None, at='HEAD'):
     path = SCRATCH / name
     if path.exists():
         sh(['git', '-C', str(repo), 'worktree', 'remove', '--force', str(path)])
         shutil.rmtree(path, ignore_errors=True)
     path.parent.mkdir(parents=True, exist_ok=True)
-    git(repo, 'worktree', 'add', '-q', '--detach', str(path), 'HEAD')
+    git(repo, 'worktree', 'add', '-q', '--detach', str(path), at)
     if tree:
         git(path, 'read-tree', '-m', '-u', 'HEAD', tree)
     # Reuse installed JS deps when the lockfile is unchanged (worktrees have no node_modules).
@@ -236,7 +274,10 @@ def flutter_failed_files(output, wt):
 # ---------------------------------------------------------------- land
 def land(repo, tree, message, ci_wait_min, dry):
     base = git(repo, 'rev-parse', 'HEAD')
-    commit = git(repo, 'commit-tree', tree, '-p', base, '-m', message)
+    return land_commit(repo, git(repo, 'commit-tree', tree, '-p', base, '-m', message), base, message, ci_wait_min, dry)
+
+
+def land_commit(repo, commit, base, message, ci_wait_min, dry):
     if dry:
         return f'dry-run: would land {commit[:8]}'
     branch = git(repo, 'branch', '--show-current') or 'main'
@@ -312,12 +353,129 @@ def follow_up(repo, held_tests):
 
 # ---------------------------------------------------------------- per repo
 def cleanup(repo, name):
-    for suffix in ('cand', 'base'):
+    for suffix in ('cand', 'base', 'bcand', 'bbase'):
         path = SCRATCH / f'{name}-{suffix}'
         if path.exists():
             sh(['git', '-C', str(repo), 'worktree', 'remove', '--force', str(path)])
             shutil.rmtree(path, ignore_errors=True)
     sh(['git', '-C', str(repo), 'worktree', 'prune'])
+
+
+def card_done(task_id):
+    try:
+        db = sqlite3.connect(f'file:{KANBAN}?mode=ro', uri=True, timeout=10)
+        row = db.execute('SELECT status FROM tasks WHERE id = ?', (task_id,)).fetchone()
+        return bool(row) and row[0] == 'done'
+    except sqlite3.Error:
+        return False
+
+
+def branch_candidates(prefix, repo, max_age_days=14):
+    """(mergeable branches oldest first, {reason: count}) for agent/<name>/* branches."""
+    dirty = {l[3:] for l in sh(['git', '-C', str(repo), 'status', '--porcelain', '--untracked-files=all', '-z'],
+                               check=True).stdout.split('\0') if l}
+    take, skipped = [], {}
+    refs = git(repo, 'for-each-ref', '--sort=committerdate', '--format=%(committerdate:unix) %(refname:short)',
+               f'refs/heads/agent/{prefix}/')
+    for when, br in (l.split(' ', 1) for l in refs.splitlines() if l):
+        if sh(['git', '-C', str(repo), 'merge-base', '--is-ancestor', br, 'HEAD']).returncode == 0:
+            continue
+        if sh(['git', '-C', str(repo), 'merge-base', 'HEAD', br]).returncode:
+            skipped['unrelated history'] = skipped.get('unrelated history', 0) + 1
+            continue
+        files = [f for f in git(repo, 'diff', '--name-only', f'HEAD...{br}').split('\n') if f]
+        why = None
+        if not files:
+            why = 'no changes'
+        elif all(git(repo, 'rev-parse', f'{br}:{f}', check=False) == git(repo, 'rev-parse', f'HEAD:{f}', check=False)
+                 for f in files):
+            why = 'already on main'
+        elif time.time() - int(when) > max_age_days * 86400:
+            why = f'older than {max_age_days} days (land manually)'
+        elif not card_done(br.rsplit('/', 1)[-1]):
+            why = 'card not done'
+        elif set(files) & dirty:
+            why = 'overlaps uncommitted worktree files'
+        if why:
+            skipped[why] = skipped.get(why, 0) + 1
+        else:
+            take.append((br, files))
+    return take, skipped
+
+
+def merge_chain(repo, base, branches):
+    """Merge branches onto base one by one with real merge commits; (head, merged, conflicted)."""
+    head, merged, conflicted = base, [], []
+    for br, files in branches:
+        p = sh(['git', '-C', str(repo), 'merge-tree', '--write-tree', '--no-messages', head, br])
+        if p.returncode:
+            conflicted.append(br); continue
+        tree = p.stdout.split()[0]
+        head = git(repo, 'commit-tree', tree, '-p', head, '-p', br, '-m', f'Merge {br} (merge train)')
+        merged.append((br, files))
+    return head, merged, conflicted
+
+
+def branch_phase(name, repo, a, log, prefix=None):
+    if git(repo, 'branch', '--show-current') not in ('main', 'master'):
+        return 'branches: skipped (shared worktree is not on main)'
+    take, skipped = branch_candidates(prefix or name, repo, a.branch_max_age_days)
+    note = ', '.join(f'{n} {k}' for k, n in sorted(skipped.items()))
+    if not take:
+        return f'branches: none to merge' + (f' ({note})' if note else '')
+    base = git(repo, 'rev-parse', 'HEAD')
+    head, merged, conflicted = merge_chain(repo, base, take)
+    files = sorted({f for _, fs in merged for f in fs})
+    if a.plan_only or not merged:
+        return (f'branches: {len(merged)} mergeable, {len(conflicted)} conflict' + (f' ({note})' if note else ''))
+    cmds, source = gate_commands(repo, files)
+    if not cmds:
+        return f'branches: {len(merged)} not merged: {source}'
+    log.write(f'\n## {name} branches ({repo})\ngate from {source}: {cmds}\n')
+    base_wt = worktree(repo, f'{name}-bbase', at=base)
+    base_rc = {c: rc for c, rc, _ in run_gate(base_wt, cmds, log)}
+
+    def passes(commit):
+        wt = worktree(repo, f'{name}-bcand', at=commit)
+        return not [c for c, rc, _ in run_gate(wt, cmds, log) if rc and base_rc.get(c, 1) == 0]
+
+    accepted, failing, cur = [], [], base
+    pending = [merged]
+    while pending:  # split the batch until failing branches are isolated
+        batch = pending.pop(0)
+        tip, ok_batch, bad = merge_chain(repo, cur, batch)
+        failing += bad
+        if ok_batch and passes(tip):
+            cur, accepted = tip, accepted + ok_batch
+        elif len(ok_batch) > 1:
+            mid = len(ok_batch) // 2
+            pending[:0] = [ok_batch[:mid], ok_batch[mid:]]
+        else:
+            failing += [br for br, _ in ok_batch]
+    if not accepted:
+        return f'branches: none landed; gate fails on {failing[:6]}'
+    msg = (f'chore(merge-train): merge {len(accepted)} finished agent branches {dt.date.today().isoformat()}\n\n' +
+           '\n'.join(f'- {br}' for br, _ in accepted) + f'\n\nGate ({source}) on the merged tree: passed.\n'
+           '\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>')
+    final = git(repo, 'commit-tree', f'{cur}^{{tree}}', '-p', base, '-p', cur, '-m', msg) if len(accepted) > 1 else cur
+    outcome = land_commit(repo, final, base, msg, a.ci_wait_min, a.dry_run)
+    if not a.dry_run and outcome.startswith(('pushed', 'merged')):
+        sync_worktree(repo, base, sorted({f for _, fs in accepted for f in fs}))
+    tail = (f'; {len(failing)} failing gate or conflict: {failing[:6]}' if failing else '') + (f'; {note}' if note else '')
+    return f'branches: {outcome}; {len(accepted)} merged' + tail
+
+
+def sync_worktree(repo, old, files):
+    """After main moved, bring clean landed files into the shared worktree and index."""
+    new = git(repo, 'rev-parse', 'HEAD')
+    for f in files:
+        if sh(['git', '-C', str(repo), 'diff', '--quiet', old, '--', f]).returncode:
+            continue  # the shared copy changed meanwhile: leave it for the worktree phase
+        if git(repo, 'cat-file', '-t', f'{new}:{f}', check=False) == 'blob':
+            sh(['git', '-C', str(repo), 'checkout', new, '--', f])
+        else:
+            sh(['git', '-C', str(repo), 'rm', '-q', '--cached', '--ignore-unmatch', '--', f])
+            (repo / f).unlink(missing_ok=True)
 
 
 def train_repo(name, repo, a, log):
@@ -396,18 +554,32 @@ def train_repo(name, repo, a, log):
 def run(a):
     selected = {x for x in a.profiles.split(',') if x}
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    lock = open(REPORT_DIR / '.lock', 'w')
+    try:  # runs share scratch worktrees: never overlap
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        print('another merge train run is active; not starting')
+        return
     day = dt.date.today().isoformat()
     lines = [f'# Merge train {day}' + (' (dry run)' if a.dry_run else ''), '']
     with open(REPORT_DIR / f'{day}.log', 'a') as log:
-        for name, repo in profiles(selected):
-            try:
-                result = train_repo(name, repo, a, log)
-            except Exception as e:  # one repo must never stop the train
-                result = f'error: {e}'
-            finally:
-                cleanup(repo, name)
-            lines.append(f'- **{name}** ({repo.name}): {result}')
-            print(lines[-1], flush=True)
+        for profile, root in profiles(selected):
+            for name, repo in targets(profile, root):
+                try:
+                    cfg = repo_config(repo)
+                    try:
+                        on = cfg.get('enabled') is not False and cfg.get('branches', True)
+                        bres = branch_phase(name, repo, a, log, prefix=profile) if on else ''
+                    except Exception as e:
+                        bres = f'branches: error: {e}'
+                    cleanup(repo, name)
+                    result = train_repo(name, repo, a, log) + (f'; {bres}' if bres else '')
+                except Exception as e:  # one repo must never stop the train
+                    result = f'error: {e}'
+                finally:
+                    cleanup(repo, name)
+                lines.append(f'- **{name}** ({repo.name}): {result}')
+                print(lines[-1], flush=True)
     (REPORT_DIR / f'{day}.md').write_text('\n'.join(lines) + '\n')
 
 
@@ -419,6 +591,7 @@ def main():
     ap.add_argument('--plan-only', action='store_true', help='report plan and gate source; run nothing')
     ap.add_argument('--min-age-min', type=int, default=30)
     ap.add_argument('--ci-wait-min', type=int, default=90)
+    ap.add_argument('--branch-max-age-days', type=int, default=14)
     a = ap.parse_args()
     if a.cmd == 'launch':
         args = [sys.executable, __file__, 'run'] + sys.argv[2:]

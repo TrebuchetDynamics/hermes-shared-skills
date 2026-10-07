@@ -1,7 +1,7 @@
 ---
 name: autogoal
 description: "Use when picking project work. Delegate a bounded task."
-version: 0.22.0
+version: 0.23.0
 author: Hermes Agent
 platforms: [linux, macos]
 metadata:
@@ -118,6 +118,9 @@ Use /autogoal or an explicit request to choose useful project work autonomously.
     listing them as exclusions in the contract. Never go silent just because a chat is open. Dirty files that match this
     profile's own completed or approved card diffs are this profile's work: build
     on them and list them in the commit handoff. Do not freeze the repo over them.
+    Dirty files older than 2 hours with no live card (in the repo or its submodules) are
+    unowned: the daily merge train lands them. A task may overlap them: build on them and
+    preserve them, unless an open owner question covers exactly those files.
 11. **Model refusals.** A provider safety refusal or crash is infrastructure: reword
     the contract neutrally (or set a `hermes kanban set-model` override) and retry
     the same card once. After two failures, record it in the journal and move on.
@@ -133,7 +136,9 @@ Use /autogoal or an explicit request to choose useful project work autonomously.
     files you changed. Never commit to main/master/the checked-out branch, never
     push, merge, rebase, amend or force-update a branch you did not create, and
     never commit secrets or generated build output. Report the branch and sha in
-    the completion receipt. Merging and pushing stay with the owner.
+    the completion receipt. The daily merge train (fleet-governor) merges done cards'
+    branches and pushes; never report a merge pass as waiting on the owner, and never merge
+    or push yourself.
 13. **State hygiene.** Keep `autogoal/state.json` under ~20 KB: the last 20 entries
     with a fixed schema; older entries go to `autogoal/history/`. Keep picker
     receipts to the last 10.
@@ -169,7 +174,9 @@ far, or reply `[SILENT]` and leave a one-line note for the next run.
    then the real handoff (goal mode, 50 turns, 3 attempts), and mark the task with
    `goals.py task <repo> <TASK> in_progress`. The picker never implements the slice itself.
 4. **Report** per the Output contract. Reply exactly `[SILENT]` when nothing changed since
-   your previous report.
+   your previous report. When the busy gate printed `idle`, `[SILENT]` is allowed only if
+   `goals.py next` is empty after backlog repair and discovery found nothing; an idle profile
+   with eligible tasks hands one off.
 
 References (load only when step 1–3 says so): `references/discovery.md`,
 `references/handoff.md`, `references/blockers-and-history.md`, `references/maintenance.md`

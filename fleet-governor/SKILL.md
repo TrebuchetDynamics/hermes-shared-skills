@@ -1,7 +1,7 @@
 ---
 name: fleet-governor
 description: "Use when coordinating project profiles and idle workers."
-version: 0.6.0
+version: 0.7.0
 author: Hermes Agent
 license: MIT
 platforms: [linux]
@@ -64,7 +64,8 @@ same symptom. CLI facts are in `references/cli-cheatsheet.md`; use it instead of
      `hermes kanban set-model` override, then unblock once.
 4. **Route IDLE_WITH_WORK** by running `/autogoal` in that profile (one bounded
    selection). The governor never picks the code itself.
-5. **Merge train (daily).** `merge-train-daily` lands verified worktree work on each repo's main at
+5. **Merge train (daily).** `merge-train-daily` merges done cards' `agent/*` branches, then lands verified worktree work
+   (submodules first) on each repo's main at
    03:30 (see `references/merge-train.md`). In the first sweep after it, read
    `~/.hermes/fleet-governor/merge-train/<date>.md`, report it, and route cards for repos left
    unlanded (missing gate, regression, new failing PR check).
