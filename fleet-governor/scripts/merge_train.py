@@ -283,8 +283,12 @@ FAIL_PATTERNS = [re.compile(p, re.M) for p in (
 )]
 
 
+SCRATCH_PREFIX = re.compile(r'\S*/merge-train/[^/\s]+/')
+
+
 def failing_ids(output):
-    return {m.group(1)[:200] for p in FAIL_PATTERNS for m in p.finditer(output)}
+    """Failure identities, with the scratch worktree prefix removed so main and candidate compare."""
+    return {SCRATCH_PREFIX.sub('', m.group(1))[:200] for p in FAIL_PATTERNS for m in p.finditer(output)}
 
 
 def new_failure(cand_rc, cand_out, base_rc, base_out):

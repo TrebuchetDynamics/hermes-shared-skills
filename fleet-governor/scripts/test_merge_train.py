@@ -122,6 +122,9 @@ class FailureComparison(unittest.TestCase):
         self.assertTrue(m.new_failure(1, 'anything', 0, ''))
         self.assertFalse(m.new_failure(0, '', 1, 'FAILED t.py::a'))
         self.assertTrue(m.new_failure(1, 'test x::y ... FAILED\n', 1, 'test x::z ... FAILED\n'))
+        base = '00:13 +42 -1: /h/.hermes/cache/scratch/merge-train/p-bbase/app/test/a_test.dart: x [E]\n'
+        cand = '00:14 +43 -1: /h/.hermes/cache/scratch/merge-train/p-bcand/app/test/a_test.dart: x [E]\n'
+        self.assertFalse(m.new_failure(1, cand, 1, base))
 
 if __name__ == '__main__':
     unittest.main()
