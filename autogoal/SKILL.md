@@ -150,7 +150,10 @@ selects, hands off and stops. Deep investigation (reading source, re-verifying b
 checks) belongs to the worker's contract, not the picker. Over budget: hand off the best candidate so
 far, or reply `[SILENT]` and leave a one-line note for the next run.
 
-1. **Reconcile first.** Read this profile's journal (`autogoal/goal-handoff.json`) and
+1. **Reconcile first.** For typed journal/readback, exact session anchors, timeout recovery
+   and native lifecycle payloads, load `references/state-and-recovery.md` when any of
+   those inspection/recovery seams is involved. Prefer `scripts/reconcile.py --profile
+   <profile> [--task-id <id>]` over handwritten journal/board comprehensions. Read this profile's journal (`autogoal/goal-handoff.json`) and
    `hermes kanban list --assignee <profile>` (plus `show` for the last card). Board reads, exactly:
    `hermes kanban show <id> --json` returns `{task, latest_summary, runs, events, comments, ...}`, with status
    at `.task.status` and the last run at `.runs[-1]`; `hermes kanban runs <id>` prints a table. Do not probe

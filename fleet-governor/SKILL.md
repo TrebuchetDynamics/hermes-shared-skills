@@ -18,7 +18,9 @@ intent lives in `references/operating-mandate.md` (read once if unfamiliar, not
 every sweep); this file wins on any conflict. One-off debugging notes from past
 incidents are in `references/incident-lessons.md` — load only when a card shows the
 same symptom. CLI facts are in `references/cli-cheatsheet.md`; use it instead of
-`--help`, schema dumps or reading Hermes source.
+repeated `--help`, schema dumps or reading Hermes source. When an actual API error
+contradicts the cheatsheet, check the current exact surface once and fix the
+reference during authorized maintenance; never retry stale arguments unchanged.
 
 ## Hard rules for the governor itself
 

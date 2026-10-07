@@ -11,7 +11,8 @@ agent-triggering run, so:
   It changes only when a card finishes, blocks, or is handed to review (reconcile and
   report), or every 2 hours as a safety check.
 
-The profile is the one whose terminal.cwd matches this job's workdir (the cwd).
+Project HERMES_HOME identifies the invoking profile. Default/root invocations
+fall back to matching terminal.cwd against this job's workdir (the cwd).
 """
 import os
 import sqlite3
@@ -30,6 +31,8 @@ def repo_root(path):
 
 
 def profile_for(cwd):
+    if HOME.parent.name == 'profiles':
+        return HOME.name
     here = repo_root(cwd)
     for cfg in sorted((ROOT / 'profiles').glob('*/config.yaml')):
         if cfg.parent.name.startswith('.'):
@@ -48,7 +51,17 @@ def main():
     if not profile:
         print(f'unknown-profile {Path.cwd()} {time.strftime("%Y-%m-%dT%H:%M", now)}')  # always run
         return
-    db = sqlite3.connect(f'file:{ROOT / "kanban.db"}?mode=ro', uri=True, timeout=10)
+    board = ROOT / 'kanban.db'
+    try:
+        board.lstat()
+    except FileNotFoundError:
+        # No board has been initialized. Let the picker reconcile/bootstrap;
+        # the read-only monitor must not create state or claim the board idle.
+        print(f'uninitialized-board {profile} {time.strftime("%Y-%m-%dT%H:%M", now)}')
+        return
+    # A dangling symlink, corrupt file or permission error is established but
+    # unusable state: preserve the error rather than guessing no live owner.
+    db = sqlite3.connect(f'file:{board}?mode=ro', uri=True, timeout=10)
     live = db.execute("SELECT id, status, COALESCE(current_run_id, '') FROM tasks "
                       "WHERE assignee = ? AND status IN ('running', 'ready') ORDER BY id", (profile,)).fetchall()
     last_terminal = db.execute(

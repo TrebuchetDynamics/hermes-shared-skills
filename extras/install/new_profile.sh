@@ -51,6 +51,6 @@ if hermes -p "$name" cron list 2>/dev/null | grep -q "$jobname"; then
 else
   prompt=$(sed -e "s|{profile}|$name|g" -e "s|{workspace}|$workspace|g" -e "s|{repo_docs_job_id}|${rd_id:-repo-docs-on-change}|g" "$repo/extras/cron/autogoal.prompt.md")
   run hermes -p "$name" cron create "$sched" "$prompt" --name "$jobname" --skill autogoal \
-    --workdir "$workspace" --deliver "$deliver" --continuity
+    --workdir "$workspace" --deliver "$deliver" --continuity --monitor-script autogoal_gate.py
 fi
 echo "Profile $name ready. Check: hermes -p $name cron list"

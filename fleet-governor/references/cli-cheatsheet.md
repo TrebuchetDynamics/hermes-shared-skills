@@ -16,9 +16,21 @@ Use these instead of `--help`, schema dumps or reading hermes-agent source.
   (`kanban promote` only accepts todo/blocked; `kanban specify` rewrites the body via LLM — avoid).
 - blocked → ready: `hermes kanban unblock <id>`; todo/blocked → ready: `hermes kanban promote <id>`.
 - Park with backoff: `hermes kanban schedule <id> "<reason/timing>"`.
-- Block: `hermes kanban block <id> --kind {dependency|needs_input|capability|transient} "<reason>"`.
-  Only `needs_input` and `capability` are for a human; `dependency` waits on parents.
-  Repeated same-kind re-blocks route to triage automatically.
+- Block (generic CLI): `hermes kanban block <id> --kind {dependency|needs_input|capability|transient} "<reason>"`.
+  Native goal-mode tools permit only `dependency` and `needs_input`; generic help
+  does not establish goal-worker eligibility. Never relabel a technical failure
+  as owner input to evade the completion judge. Follow ask-don't-block for owner
+  questions and continue independent work. Repeated same-kind re-blocks route
+  to triage automatically.
+- Native lifecycle metadata is an object; CLI `--metadata` takes serialized JSON.
+  Omit reviewer overrides unless a real discovered authorized profile is intended:
+  the literal `reviewer` is not a built-in profile.
+- After a handoff timeout, reconcile the exact original card/run before retrying.
+  A validated contract or queued card is not a running/completed worker. Persist
+  per-target receipts before transport/waiting, preserve live claims and do not
+  wrap long handoffs in a shorter-lived execute-code kernel.
+- For session recall use the requested profile/session bookends first, then only
+  returned message IDs from that exact session as scroll anchors; never sentinel IDs.
 - Edit body/title: `hermes kanban edit <id> ...`; comment: `hermes kanban comment <id> "..."`.
 - Model override: `hermes kanban set-model <id> ...`; reassign: `hermes kanban reassign <id> <profile>`.
 - Archive (≠ done): `hermes kanban archive <id>`.
