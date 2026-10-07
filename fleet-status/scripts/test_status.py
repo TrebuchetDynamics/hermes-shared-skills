@@ -39,6 +39,100 @@ class StatusTests(unittest.TestCase):
         self.assertEqual(counts['archived'],1)
         for state in ['blocked','done','abandoned','unknown']:self.assertEqual(counts[state],0)
 
+    def test_configured_shared_roots_not_reported_missing(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);external=root/'shared skills'
+            for name in self.m.SHARED:
+                skill=external/name;skill.mkdir(parents=True)
+                (skill/'SKILL.md').write_text('---\nname: '+name+'\nversion: 1\n---\n')
+            (root/'config.yaml').write_text('skills:\n  external_dirs:\n  - '+json.dumps(str(external))+'\n')
+            before={str(p):p.read_bytes() for p in root.rglob('*') if p.is_file()}
+            with patch.object(self.m.subprocess,'run',side_effect=AssertionError('Startup forbidden')):
+                report=self.m.build_report(self.m.collect(root))
+            self.assertEqual(report['drift']['missing_skills'],[])
+            self.assertEqual(set(report['drift']['shared_skill_inventory']),set(self.m.SHARED))
+            self.assertEqual(before,{str(p):p.read_bytes() for p in root.rglob('*') if p.is_file()})
+
+    def test_ambiguous_external_config_is_unknown_not_missing(self):
+        cases=['skills :\n  external_dirs:\n  - /existing/root\n',
+               '{skills: {external_dirs: ["/existing/root"]}}\n',
+               'skills:\n  external_dirs :\n  - /existing/root\n',
+               'skills:\n  external_dirs: []\n  external_dirs: []\n',
+               'skills:\n  <<: *shared\n',
+               'skills:\n  external_dirs:\n  - /safe\n  <<: *shared\n',
+               'skills:\n    external_dirs:\n    - /safe\n',
+               '<<: *defaults\n',
+               'skills:\n  "external_dirs": []\n',
+               '"skills":\n  external_dirs: []\n',
+               'skills:\n  external_dirs:\n  - "unterminated\n']
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            for text in cases:
+                with self.subTest(text=text):
+                    (root/'config.yaml').write_text(text)
+                    items=self.m.skill_inventory(root)
+                    self.assertTrue(all(x.get('state','').startswith('UNKNOWN') for x in items))
+                    self.assertFalse(any(x.get('missing') for x in items))
+
+    def test_external_resolution_uncertainty_never_claims_missing_or_selects_duplicate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);first=root/'first';second=root/'second'
+            for external in [first,second]:
+                (external/'autogoal').mkdir(parents=True)
+                (external/'autogoal/SKILL.md').write_text('fixture '+external.name)
+            (root/'config.yaml').write_text('skills:\n  external_dirs:\n  - '+str(first)+'\n  - '+str(second)+'\n')
+            entry=self.m.skill_inventory(root)[0]
+            self.assertEqual(entry.get('state'),'UNKNOWN_AMBIGUOUS_SKILL')
+            link=root/'linked';link.symlink_to(first,target_is_directory=True)
+            (root/'config.yaml').write_text('skills:\n  external_dirs:\n  - '+str(link)+'\n')
+            entry=self.m.skill_inventory(root)[0]
+            self.assertEqual(entry.get('state'),'UNKNOWN_UNSAFE_SYMLINK')
+            (root/'config.yaml').write_text('skills:\n  external_dirs:\n  - '+str(root/'absent')+'\n')
+            self.assertTrue(all(x.get('state')=='UNKNOWN_EXTERNAL_ROOT' for x in self.m.skill_inventory(root)))
+
+    def test_quoted_external_paths_with_comments(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);external=root/"shared # it's skills"
+            (external/'autogoal').mkdir(parents=True)
+            (external/'autogoal/SKILL.md').write_text('fixture')
+            for scalar in [json.dumps(str(external)),"'"+str(external).replace("'","''")+"'"]:
+                with self.subTest(scalar=scalar):
+                    (root/'config.yaml').write_text('skills:\n  external_dirs:\n    - '+scalar+' # configured root\n')
+                    entry=self.m.skill_inventory(root)[0]
+                    self.assertEqual(entry.get('resolved'),str(external/'autogoal/SKILL.md'))
+
+    def test_local_skill_takes_precedence_over_external(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);external=root/'external'
+            local=root/'skills'/self.m.SHARED['autogoal'];local.mkdir(parents=True)
+            (local/'SKILL.md').write_text('local')
+            (external/'autogoal').mkdir(parents=True)
+            (external/'autogoal/SKILL.md').write_text('external')
+            (root/'config.yaml').write_text('skills:\n  external_dirs:\n  - '+str(external)+'\n')
+            self.assertEqual(self.m.skill_inventory(root)[0]['resolved'],str(local/'SKILL.md'))
+            (root/'config.yaml').write_text('skills:\n  external_dirs: *ambiguous\n')
+            self.assertEqual(self.m.skill_inventory(root)[0]['resolved'],str(local/'SKILL.md'))
+
+    def test_known_categorized_external_and_flat_local_layouts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);external=root/'external'
+            skill=external/self.m.SHARED['autogoal'];skill.mkdir(parents=True)
+            (skill/'SKILL.md').write_text('categorized external')
+            (root/'config.yaml').write_text('skills:\n  external_dirs:\n  - '+str(external)+'\n')
+            self.assertEqual(self.m.skill_inventory(root)[0].get('resolved'),str(skill/'SKILL.md'))
+            local=root/'skills/autogoal';local.mkdir(parents=True)
+            (local/'SKILL.md').write_text('flat local')
+            self.assertEqual(self.m.skill_inventory(root)[0].get('resolved'),str(local/'SKILL.md'))
+
+    def test_unreadable_external_root_is_unknown(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);external=root/'external';external.mkdir()
+            (root/'config.yaml').write_text('skills:\n  external_dirs:\n  - '+str(external)+'\n')
+            with patch.object(self.m.os,'access',return_value=False):
+                self.assertTrue(all(x.get('state')=='UNKNOWN_EXTERNAL_ROOT' for x in self.m.skill_inventory(root)))
+
     def test_ambiguous_config_is_unknown(self):
         with tempfile.TemporaryDirectory() as directory:
             p=Path(directory)/'config.yaml'
@@ -87,6 +181,17 @@ class StatusTests(unittest.TestCase):
                 items=self.m.skill_inventory(root)
             entry=next(x for x in items if x['name']=='repo-docs')
             self.assertEqual(entry['support_scan'],'PARTIAL')
+
+    def test_archive_container_is_not_a_live_board(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            boards = root / 'kanban/boards'
+            (boards / '_archived' / 'old-123').mkdir(parents=True)
+            (boards / 'project').mkdir()
+            self.assertEqual(self.m.board_paths(root), [
+                ('default', root / 'kanban.db'),
+                ('project', boards / 'project/kanban.db'),
+            ])
 
     def test_available_gateway_does_not_hide_blocked_work(self):
         self.raw['tasks']=[{'id':'t1','profile':'one','status':'blocked','summary':'missing Chromium; tooling unavailable'}]

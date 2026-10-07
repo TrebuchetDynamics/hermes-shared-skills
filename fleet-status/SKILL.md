@@ -24,7 +24,9 @@ read commands can migrate SQLite schemas or load `.env`. It reads allowlisted
 simple scalar configuration directly; complex/ambiguous YAML is UNKNOWN. It reads
 gateway-state timestamp/PID existence without claiming process identity or per-
 profile transport health. Board paths follow the inspected native filesystem
-layout. SQLite is opened `mode=ro&immutable=1` only when no nonempty WAL exists;
+layout. Exclude `kanban/boards/_archived`, the native archive container, from
+live-board probes; archived databases inside it are not part of this dashboard.
+The archived-card count covers archived rows in inspected live boards only. SQLite is opened `mode=ro&immutable=1` only when no nonempty WAL exists;
 active WAL gives UNKNOWN rather than ignoring pending transactions or creating
 shared-memory files. No databases are created or migrated. Supporting-file
 symlinks/escapes and credential filenames are skipped and reported as incomplete.
@@ -49,7 +51,17 @@ unknown actions and technical remediation are not automatic human requests.
 Do not infer operator approval from a prior task or a blocked status alone.
 
 Shared drift covers the four configured shared skill families and their local
-supporting files, not every custom/external skill. Compare fleet-wide settings
+supporting files, not every custom/external skill. Read `skills.external_dirs`
+only as a simple block list of absolute paths (plain, single-quoted or JSON-style
+double-quoted, with optional comments); do not expand environment variables,
+import Hermes/startup or load `.env`. Probe each family's known categorized and
+flat paths in profile-local skills first, then explicitly configured external
+roots. Local copies override external ones; multiple candidates in the same tier
+are UNKNOWN rather than an arbitrary selection. Ambiguous/unsupported config,
+unsafe symlinks and absent/unreadable external roots leave coverage UNKNOWN,
+not proof of missing skills. Inventory hashes attest inspected files only;
+runtime discovery, arbitrary layouts, create-dir and project skill tiers remain
+unverified. Compare fleet-wide settings
 against explicit expected defaults. Report model/provider/workspace/cadence as
 profile-specific, not suspicious merely because they differ. An intentional-
 difference label means preserved policy, not approval of any future change.

@@ -130,12 +130,67 @@ def cli(*args):
     raise ValueError('Collector never invokes Hermes CLI; read commands can migrate state or load secrets')
 
 
+def external_skill_roots(home):
+    """Allowlisted block-list paths only; never import YAML/Hermes or expand env."""
+    path=home/'config.yaml'
+    try:
+        if path.is_symlink():return None
+        lines=path.read_text().splitlines()
+    except (OSError,UnicodeError):return None
+    if any(re.match(r'^<<:',line) for line in lines):return None
+    starts=[i for i,line in enumerate(lines) if re.match(r'''^["']?skills["']?:''',line)]
+    if not starts:return None  # Unrecognized YAML is not proof that roots are absent.
+    if len(starts)!=1 or not re.fullmatch(r'skills:\s*(?:#.*)?',lines[starts[0]]):return None
+    block=[]
+    for line in lines[starts[0]+1:]:
+        if line and not line[0].isspace() and not line.startswith('#'):break
+        if line.strip() and not line.lstrip().startswith('#'):block.append(line)
+    if any(re.match(r'^\s*<<:',line) for line in block):return None
+    starts=[i for i,line in enumerate(block) if re.match(r'''^\s+["']?external_dirs["']?:''',line)]
+    if not starts:return None  # Unrecognized YAML is not proof that roots are absent.
+    if len(starts)!=1:return None
+    index=starts[0]
+    if not re.fullmatch(r'  external_dirs:\s*(?:#.*)?',block[index]):return None
+    roots=[]
+    for line in block[index+1:]:
+        if re.match(r'^  [A-Za-z_]',line):break
+        match=re.fullmatch(r'  (?:  )?-\s+(.+?)\s*',line)
+        if not match:return None
+        value=match[1]
+        try:
+            if value.startswith('"'):
+                value,end=json.JSONDecoder().raw_decode(value)
+                if not re.fullmatch(r'\s*(?:#.*)?',match[1][end:]):return None
+            elif value.startswith("'"):
+                quoted=re.fullmatch(r"'((?:[^']|'')*)'\s*(?:#.*)?",value)
+                if not quoted:return None
+                value=quoted[1].replace("''","'")
+            else:value=value.split(' #',1)[0].strip()
+        except ValueError:return None
+        if not isinstance(value,str) or not value.startswith('/') or '$' in value:return None
+        root=Path(value)
+        if root not in roots:roots.append(root)
+    return roots
+
+
 def skill_inventory(home):
-    result=[]
+    result=[];external=external_skill_roots(home)
     for name,relative in SHARED.items():
-        file=home/'skills'/relative/'SKILL.md'
-        if file.is_symlink():result.append({'name':name,'state':'UNKNOWN_UNSAFE_SYMLINK'});continue
-        if not file.is_file():result.append({'name':name,'missing':True});continue
+        local_candidates=[home/'skills'/layout/'SKILL.md' for layout in dict.fromkeys((relative,name))]
+        candidates=[]
+        if external is not None:
+            candidates.extend(root/layout/'SKILL.md' for root in external for layout in dict.fromkeys((relative,name)))
+        local=[p for p in local_candidates if p.is_file() or p.is_symlink()]
+        matches=local or [p for p in candidates if p.is_file() or p.is_symlink()]
+        if len(matches)>1:
+            result.append({'name':name,'state':'UNKNOWN_AMBIGUOUS_SKILL'});continue
+        file=matches[0] if matches else None
+        if file is None:
+            uncertain=external is not None and any(not root.is_dir() or not os.access(root,os.R_OK|os.X_OK) or root.is_symlink() or any(p.is_symlink() for p in root.parents) for root in external)
+            state='UNKNOWN_EXTERNAL_CONFIG' if external is None else 'UNKNOWN_EXTERNAL_ROOT' if uncertain else None
+            result.append({'name':name,'state':state} if state else {'name':name,'missing':True});continue
+        if file.is_symlink() or any(parent.is_symlink() for parent in file.parents):
+            result.append({'name':name,'state':'UNKNOWN_UNSAFE_SYMLINK'});continue
         try:
             text=file.read_text();version=re.search(r'^version:\s*(.+)$',text,re.M);base=file.resolve().parent
             support=[];limited=False
@@ -209,7 +264,9 @@ def board_paths(root):
     boards=[('default',root/'kanban.db')]
     folder=root/'kanban/boards'
     if folder.is_dir() and not folder.is_symlink():
-        boards.extend((p.name,p/'kanban.db') for p in sorted(folder.iterdir()) if p.is_dir() and not p.is_symlink() and re.fullmatch(r'[A-Za-z0-9_-]+',p.name))
+        # Native remove_board stores retired boards inside this container;
+        # it is not itself a live board and has no kanban.db.
+        boards.extend((p.name,p/'kanban.db') for p in sorted(folder.iterdir()) if p.name != '_archived' and p.is_dir() and not p.is_symlink() and re.fullmatch(r'[A-Za-z0-9_-]+',p.name))
     return boards
 
 
