@@ -39,7 +39,8 @@ class InstallTests(unittest.TestCase):
                     'extras/monitors/autogoal_monitor.py',
                     'extras/monitors/autogoal_gate.py',
                     'extras/maintenance/scratch_cleanup.py',
-                    'extras/maintenance/merge_train_daily.py'):
+                    'extras/maintenance/merge_train_daily.py',
+                    'extras/maintenance/question_relay.py'):
             p = self.repo / rel
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text('print("fixture target")\n')

@@ -17,7 +17,9 @@ FLEET = ['fleet-governor', 'fleet-blockers', 'fleet-status']
 MENU = ['repo_docs', 'autogoal', 'grill_me', 'lgtm', 'git_commit_push', 'git_pull_merge', 'impeccable']
 WRAPPERS = {'repo_docs_monitor.py': 'extras/monitors/repo_docs_monitor.py',
             'autogoal_gate.py': 'extras/monitors/autogoal_gate.py',
-            'autogoal_monitor.py': 'extras/monitors/autogoal_monitor.py'}
+            'autogoal_monitor.py': 'extras/monitors/autogoal_monitor.py',
+            # Any profile with a Telegram bot can host the question-relay job.
+            'question_relay.py': 'extras/maintenance/question_relay.py'}
 DEFAULT_ONLY = {'scratch_cleanup.py': 'extras/maintenance/scratch_cleanup.py',
                 'merge_train_daily.py': 'extras/maintenance/merge_train_daily.py'}
 
