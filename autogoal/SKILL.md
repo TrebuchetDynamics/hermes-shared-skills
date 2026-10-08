@@ -13,19 +13,22 @@ metadata:
 
 ## When to use
 
-Use /autogoal or an explicit request to choose useful project work autonomously. Select exactly one bounded task in the active profile's authorized workspace, then hand it to Hermes' native persistent goal-mode worker with an explicit 50-turn budget. This uses the shipped goal judge/continuation engine, not a printed slash command or a prompt-only iteration limit. It does not authorize new recurring jobs.
+Use /autogoal or an explicit autonomous-work request. Select one bounded task in the active profile's authorized workspace. Hand it to Hermes' native persistent goal-mode worker with 50 turns by default (explicit 100 for a coherent larger outcome), enforced by the shipped goal judge/continuation engine—not a prompt-only limit. No recurring jobs are authorized.
 
 ## Operating priorities (v0.22 — these override anything later in this file and in references/)
 
 1. **Step 0 — reconcile, never fingerprint-exit.** Resolve workspace instructions,
-   current human decisions, journal and live ownership before selecting. Fingerprints
-   may reuse scoped evidence; they NEVER authorize skipping discovery or returning
-   early. Disable change-only fingerprint monitors on autogoal jobs (they let idle profiles stop exploring); the only allowed gate is `autogoal_gate.py`, which skips a tick only while this profile's own card is running or ready and nothing finished (preserving schedule, model, delivery and enabled state).
+   current human decisions, journal and live ownership before selecting.
+   Reconcile once, select usable backlog, check ownership/source freshness, hand off.
+   Run discovery only when no usable task remains; fingerprints never justify an idle exit.
+   Disable change-only fingerprint monitors; only `autogoal_gate.py` may skip a tick
+   while this profile's own card is running or ready and nothing finished.
+   Preserve schedule, model, delivery and enabled state.
    Reconcile new terminal results, then CONTINUE selection in the same occurrence.
    A completed card is not a stop condition. A genuinely live worker wins: reconcile
    its exact run; never enqueue overlapping work or steal its lease.
-   On EVERY idle occurrence, inspect the nearest accepted milestone and one bounded
-   implementation, caller/test or delivery seam before any no-selection result.
+   On EVERY idle occurrence without a usable backlog task, inspect the nearest accepted
+   milestone and one bounded implementation, caller/test or delivery seam before any no-selection result.
    Queue exhaustion, no TODO/FIXME markers, green previous tests and unchanged HEAD
    are not proof that useful work is absent. Prefer implementing an accepted next
    slice or fixing an evidenced defect with regression over repeated audits or
@@ -33,14 +36,12 @@ Use /autogoal or an explicit request to choose useful project work autonomously.
    finds no eligible delta. Record `work_search`: milestone/source, checked seam
    and evidence, candidates, eligibility/rejection reasons and next seam. This is
    prompt policy, not a runtime guarantee of autonomous progress.
-2. **Repo-docs runs separately; autogoal works from its backlog.** When this profile
-   has an enabled `repo-docs` cron job (e.g. `repo-docs-30m`) and the repository has a
-   valid `goals.json` (or, in older repos, a TODO.md `Goal coverage` table), do NOT
-   run the repo-docs prepass. Record
-   `Repo-docs pass: delegated to cron <job id> (TODO.md @ <short HEAD or mtime>)`.
-   Run the prepass yourself only when no such job exists, or when TODO.md is missing,
-   has no `Goal coverage` table, or has not changed in 24h while sources did; then
-   at most once per day.
+2. **Repo-docs runs separately; autogoal works from its backlog.**
+   Do not run a repo-docs prepass for a usable backlog task, even without a docs cron.
+   Record `Repo-docs pass: existing backlog <source/receipt>` or `delegated to cron <job id>`.
+   With no usable task, load discovery.md; a missing/stale backlog may justify one
+   bounded prepass, at most once per day, only when no enabled docs job covers it.
+   Missing TODO.md or an old mtime alone does not invalidate a usable goals.json task.
    **Selection order:**
    (a) the reconciled live/previous card;
    (b) `python ~/.hermes/shared-skills/repo-docs/scripts/goals.py next <repo> --json`.
@@ -80,8 +81,9 @@ Use /autogoal or an explicit request to choose useful project work autonomously.
    first turn as 1–3 observable checks under `Interpreted acceptance:` and proceeds.
    Ask an owner question (priority 9) only when the possible readings lead to
    materially different product outcomes, and proceed on the recommended reading
-   meanwhile. A card bigger than one 50-turn slice delivers its
-   first independently verifiable part and lists the rest under `Remaining:`.
+   meanwhile. Choose 50 turns, or explicit 100 with `Goal budget rationale:` explaining
+   one coherent outcome. Stop at acceptance, not budget exhaustion; never spend turns
+   merely because available. If acceptance cannot fit, narrow it before dispatch.
 7. **Done means done.** When every acceptance item has evidence, complete or
    request review. No extra polishing, suites or re-verification. An item needing
    unavailable infrastructure is reported NOT_CHECKED, and the card still completes
@@ -127,18 +129,13 @@ Use /autogoal or an explicit request to choose useful project work autonomously.
 12. **Board queries.** Use `hermes kanban list/show/runs --json` piped through `jq`
     with `--assignee`/`--status` filters. Never hand-write SQL against kanban.db,
     and never `json.loads` raw terminal output of a whole-board listing.
-14. **Local commits (owner-authorized 2026-10-05).** When a card's acceptance checks
-    pass, the worker commits the files it changed to a local branch with
-    `<this-skill-directory>/scripts/agent_commit.sh <repo> <profile> <card-id> "<message>" <files>...`.
-    This writes branch `agent/<profile>/<card-id>` through a temporary index: it
-    does not switch branches or touch HEAD, the index, the working tree or anyone
-    else's dirty files. Commit again after review fixes (same branch). List only
-    files you changed. Never commit to main/master/the checked-out branch, never
-    push, merge, rebase, amend or force-update a branch you did not create, and
-    never commit secrets or generated build output. Report the branch and sha in
-    the completion receipt. The daily merge train (fleet-governor) merges done cards'
-    branches and pushes; never report a merge pass as waiting on the owner, and never merge
-    or push yourself.
+14. **Local commits.** After acceptance, use only `scripts/agent_commit.sh` for owned
+    files on `agent/<profile>/<card-id>`; see references/handoff.md for exact commands.
+    Never commit to main/master/the checked-out branch, never
+    push, merge, rebase, amend or force-update a branch you did not create.
+    Preserve foreign work; never commit secrets or generated output. The integration
+    owner lands a protected PR after required checks, no direct main push or bypass.
+    Workers never merge or push. Review/commit alone is not delivery.
 13. **State hygiene.** Keep `autogoal/state.json` under ~20 KB: the last 20 entries
     with a fixed schema; older entries go to `autogoal/history/`. Keep picker
     receipts to the last 10.
@@ -150,31 +147,26 @@ selects, hands off and stops. Deep investigation (reading source, re-verifying b
 checks) belongs to the worker's contract, not the picker. Over budget: hand off the best candidate so
 far, or reply `[SILENT]` and leave a one-line note for the next run.
 
-1. **Reconcile first.** For typed journal/readback, exact session anchors, timeout recovery
-   and native lifecycle payloads, load `references/state-and-recovery.md` when any of
-   those inspection/recovery seams is involved. Prefer `scripts/reconcile.py --profile
-   <profile> [--task-id <id>]` over handwritten journal/board comprehensions. Read this profile's journal (`autogoal/goal-handoff.json`) and
-   `hermes kanban list --assignee <profile>` (plus `show` for the last card). Board reads, exactly:
-   `hermes kanban show <id> --json` returns `{task, latest_summary, runs, events, comments, ...}`, with status
-   at `.task.status` and the last run at `.runs[-1]`; `hermes kanban runs <id>` prints a table. Do not probe
-   other JSON shapes. Note terminal
-   results not yet reported, and apply owner replies found via `session_search`. A genuinely
-   live worker wins: reconcile it and hand off nothing overlapping. For a blocked, failed or
-   crashed card, load `references/blockers-and-history.md`.
+1. **Reconcile first.** Use `scripts/reconcile.py --profile <profile> [--task-id <id>]`
+   once for the prior handoff; reuse its readback instead of repeating show/journal reads.
+   Apply owner replies and report new terminal results. Preserve the original card and worker session
+   after interruption; a new tick never licenses a replacement, budget reset or overlapping worker.
+   Check live ownership again at dispatch (the helper does this under its lock).
+   Load `references/state-and-recovery.md` for schema/session/recovery details and
+   `references/blockers-and-history.md` for failed/blocked cards. Retry limits still apply.
 2. **Select.** Run `python ~/.hermes/shared-skills/repo-docs/scripts/goals.py next <repo> --json`
    and take the first eligible task not claimed by a live owner (Operating priority 2). If a
    returned task is not actually runnable, repair the backlog instead of going silent. If it needs an
    owner action or decision, run `goals.py section <repo> <TASK> "Needs decision"` and ask (hard-blockers).
    If it bundles excluded scope, register the in-scope slice with `goals.py add-task` and park the rest.
-   Then pick again, within the picker budget. Load
-   `references/discovery.md` only when that returns nothing, the repo has no `goals.json`, or
-   the profile has no `repo-docs` cron job. If it returned a task, do not load discovery.md
-   to double-check it.
+   Then pick again, within the picker budget. Load `references/discovery.md` only if
+   no usable milestone task remains (including the TODO fallback); do not double-check
+   a usable task with a broad discovery or documentation pass.
 3. **Hand off.** Load `references/handoff.md`. Write the contract file with every field:
    `Objective`, `Scope`, `Verification`, `Source`, `Project payoff`, `Current evidence`,
    `Expected change`, `Acceptance`, `Stop conditions`, `Repo-docs pass`. Build it from the
    goals.json task (quote its task and goal IDs), run `scripts/start_goal.py … --validate-only`,
-   then the real handoff (goal mode, 50 turns, 3 attempts), and mark the task with
+   then the real handoff (same selected 50/100 budget, 3 attempts), and mark the task with
    `goals.py task <repo> <TASK> in_progress`. The picker never implements the slice itself.
 4. **Report** per the Output contract. Reply exactly `[SILENT]` when nothing changed since
    your previous report. When the busy gate printed `idle`, `[SILENT]` is allowed only if
@@ -192,4 +184,4 @@ Completion: objective, changed files/artifact, actual verification result, remai
 Questions: each open owner question as a numbered multiple-choice item with the default marked, what is already proceeding on that default, and the single step (if any) that waits for the answer. Never report the turn itself as blocked; do not say no eligible goals solely because preferred filenames are missing.
 Nothing eligible: `Checked scope exhausted` plus inspected sources/components and evidence that considered candidates are complete, claimed, blocked, or unsupported; do not claim repository-wide completeness from a scoped search.
 
-No skill invocation or queued card alone proves a running goal loop, Telegram delivery, scheduler activation, or completed downstream task. Report the native task ID, explicit 50-turn budget, and observed queued/running/completed/blocked state. This goal worker has its own durable session; it does not set a /goal in the originating Telegram or CLI conversation.
+No skill invocation or queued card alone proves a running goal loop, Telegram delivery, scheduler activation, or completed downstream task. Record the native task ID, selected 50/100-turn budget, and observed queued/running/completed/blocked state in the durable receipt. In the human-facing scheduled summary, translate the observed state plainly and include IDs only when needed for an owner action or diagnosis. This goal worker has its own durable session; it does not set a /goal in the originating Telegram or CLI conversation.

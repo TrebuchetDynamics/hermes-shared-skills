@@ -46,6 +46,8 @@ class PipelineTests(unittest.TestCase):
         with sqlite3.connect(self.db) as db:
             db.execute('CREATE TABLE tasks (id TEXT, goal_mode INTEGER, goal_max_turns INTEGER)')
         self.tasks, self.runs, self.created = [], [], 0
+        self.expected_budget = 50
+        self.created_body = ''
 
     def cli(self, prefix, *args):
         if args == ('config', 'get', 'terminal.cwd'):
@@ -60,24 +62,26 @@ class PipelineTests(unittest.TestCase):
         if args[3] == 'create':
             self.created += 1
             self.assertEqual(args[args.index('--max-retries') + 1], '3')
-            self.assertEqual(args[args.index('--goal-max-turns') + 1], '50')
+            budget = int(args[args.index('--goal-max-turns') + 1])
+            self.assertEqual(budget, self.expected_budget)
+            self.created_body = args[args.index('--body') + 1]
             self.assertEqual(args[args.index('--completion-contract') + 1], 'local-only')
             task = {'id': 't_fixture', 'title': self.selected['title'], 'assignee': 'fixture',
                     'workspace_kind': 'dir', 'workspace_path': str(self.repo),
                     'completion_contract': 'local-only', 'status': 'ready'}
             self.tasks.append(task)
             with sqlite3.connect(self.db) as db:
-                db.execute('INSERT INTO tasks VALUES (?, ?, ?)', ('t_fixture', 1, 50))
+                db.execute('INSERT INTO tasks VALUES (?, ?, ?)', ('t_fixture', 1, budget))
             return json.dumps(task)
         if args[3] == 'show':
             self.assertEqual(args[4], 't_fixture')
             return json.dumps({'task': self.tasks[0], 'runs': self.runs})
         raise AssertionError(args)
 
-    def dispatch(self):
+    def dispatch(self, *extra):
         argv = ['start_goal.py', '--profile', 'fixture', '--workspace', str(self.repo),
                 '--title', self.selected['title'], '--contract-file', str(self.contract),
-                '--source-snapshot', str(self.snapshot)]
+                '--source-snapshot', str(self.snapshot), *extra]
         with patch.object(start_goal, 'run', side_effect=self.cli), \
                 patch.object(sys, 'argv', argv), patch.dict(os.environ, {}, clear=True), \
                 contextlib.redirect_stdout(io.StringIO()) as output:
@@ -87,6 +91,8 @@ class PipelineTests(unittest.TestCase):
     def test_selected_task_executes_and_fixture_review_acknowledges_exact_candidate(self):
         first = self.dispatch()
         self.assertEqual(first['outcome'], 'handed_off')
+        self.assertEqual(first['goal_max_turns'], 50)
+        self.assertIn('50-turn budget', self.created_body)
         self.assertEqual(self.dispatch()['outcome'], 'already_owned')
         self.assertEqual(self.created, 1)
         artifact = self.repo / 'artifact.txt'
@@ -114,6 +120,16 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(self.dispatch()['outcome'], 'already_owned')
         self.assertEqual(self.created, 1)
 
+    def test_explicit_100_budget_matches_body_native_readback_and_journal(self):
+        self.expected_budget = 100
+        self.contract.write_text(self.contract.read_text() +
+                                 'Goal budget rationale: one coherent implementation and recovery outcome\n')
+        result = self.dispatch('--goal-max-turns', '100')
+        self.assertEqual(result['goal_max_turns'], 100)
+        self.assertIn('100-turn budget', self.created_body)
+        self.assertNotIn('50-turn budget', self.created_body)
+        self.assertEqual(json.loads((self.home / 'autogoal/goal-handoff.json').read_text()), result)
+
     def test_source_drift_refuses_new_dispatch(self):
         (self.repo / 'goals.json').write_text('{}')
         with self.assertRaisesRegex(SystemExit, 'Source changed'):
@@ -121,8 +137,50 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(self.created, 0)
         self.assertEqual(self.tasks, [])
 
+    def test_100_requires_rationale_before_cli_or_journal_mutation(self):
+        for suffix in ('', 'Goal budget rationale:   \n'):
+            with self.subTest(suffix=suffix):
+                self.contract.write_text(''.join(f'{key}: fixture {key}\n' for key in start_goal.CONTRACT_FIELDS) + suffix)
+                with patch.object(self, 'cli', side_effect=AssertionError('CLI reached before budget rationale validation')) as cli:
+                    with self.assertRaisesRegex(SystemExit, 'Goal budget rationale'):
+                        self.dispatch('--goal-max-turns', '100')
+                    cli.assert_not_called()
+                self.assertFalse((self.home / 'autogoal').exists())
+
+    def test_invalid_budget_rejects_before_any_cli_or_journal_mutation(self):
+        for budget in ('0', '20', '51', '101', '-1', '100.0', 'many'):
+            with self.subTest(budget=budget), patch.object(self, 'cli') as cli, contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as error:
+                    self.dispatch('--goal-max-turns', budget)
+                self.assertEqual(error.exception.code, 2)
+                cli.assert_not_called()
+                self.assertFalse((self.home / 'autogoal').exists())
+
+    def test_duplicate_budget_selection_preserves_original_card_session_and_receipt(self):
+        self.contract.write_text(self.contract.read_text() + 'Goal budget rationale: coherent larger outcome\n')
+        original = self.dispatch()
+        receipt = (self.home / 'autogoal/goal-handoff.json').read_bytes()
+        self.tasks[0]['status'] = 'running'
+        self.runs.append({'id': 1, 'profile': 'fixture', 'metadata': {'worker_session_id': 'fixture_session'}})
+        result = self.dispatch('--goal-max-turns', '100')
+        self.assertEqual(result['task_id'], original['task_id'])
+        self.assertEqual(result['goal_max_turns'], 50)
+        self.assertEqual(self.created, 1)
+        self.assertEqual(self.runs[0]['metadata']['worker_session_id'], 'fixture_session')
+        self.assertEqual((self.home / 'autogoal/goal-handoff.json').read_bytes(), receipt)
+
+    def test_validate_only_reports_selected_budget_without_cli_or_writes(self):
+        self.contract.write_text(self.contract.read_text() + 'Goal budget rationale: coherent larger outcome\n')
+        for budget in ('50', '100'):
+            with self.subTest(budget=budget), patch.object(self, 'cli') as cli:
+                result = self.dispatch('--goal-max-turns', budget, '--validate-only')
+                self.assertEqual(result['goal_max_turns'], int(budget))
+                cli.assert_not_called()
+                self.assertFalse((self.home / 'autogoal').exists())
+
     def test_timeout_preserves_original_card_for_reconciliation(self):
         self.dispatch()
+        self.runs.append({'id': 1, 'profile': 'fixture', 'metadata': {'worker_session_id': 'fixture_session'}})
         original = (self.home / 'autogoal/goal-handoff.json').read_bytes()
         with patch.object(reconcile, 'run', side_effect=subprocess.TimeoutExpired(['hermes'], 30)):
             with self.assertRaises(subprocess.TimeoutExpired):
@@ -130,6 +188,11 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual((self.home / 'autogoal/goal-handoff.json').read_bytes(), original)
         self.assertEqual(self.dispatch()['outcome'], 'already_owned')
         self.assertEqual(self.created, 1)
+        with patch.object(reconcile, 'run', side_effect=self.cli):
+            observed = reconcile.reconcile(['hermes'], self.home, 'fixture')
+        self.assertEqual(observed['metadata']['worker_session_id'], 'fixture_session')
+        self.assertEqual(observed['task_id'], 't_fixture')
+        self.assertEqual(observed['run_id'], 1)
 
 
 if __name__ == '__main__':

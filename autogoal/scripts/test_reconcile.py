@@ -24,6 +24,8 @@ class ReconcileTests(unittest.TestCase):
             with patch.object(m, 'run', return_value=json.dumps(snapshot)) as cli:
                 result = m.reconcile(['hermes','-p','fixture'], home, 'fixture')
             self.assertEqual(result['status'], 'done')
+            self.assertTrue(result['selection_required'])
+            self.assertNotIn('discovery_required', result, 'Reconcile cannot decide backlog eligibility')
             self.assertEqual(result['summary'], 'five controls passed')
             self.assertEqual(result['run_id'], 5)
             self.assertTrue(result['worker_observed'])

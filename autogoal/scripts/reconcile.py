@@ -44,6 +44,7 @@ def reconcile(prefix, home, profile, task_id=None):
     owner = owner if isinstance(owner, str) and owner else None
     ownership = 'current_profile' if owner == profile else 'other_profile' if owner else 'unknown'
     return {'profile': profile, 'task_id': task_id, 'status': task['status'],
+            'selection_required': True,
             'run_profile': owner, 'run_ownership': ownership, 'card_run_observed': bool(runs),
             'title': task.get('title'), 'run_id': latest.get('id'),
             'worker_outcome': latest.get('outcome'),

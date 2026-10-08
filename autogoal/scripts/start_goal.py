@@ -25,13 +25,13 @@ CONTRACT_FIELDS = ('Objective', 'Scope', 'Verification', 'Source', 'Project payo
                    'Repo-docs pass')
 
 
-def validate_contract(text):
+def validate_contract(text, goal_max_turns=BUDGET):
     """Validate structure, not truth, priority, permissions or executable proof."""
     fields = {}
     current = None
     for line in text.splitlines():
         header = re.match(r'^\s*([A-Za-z][A-Za-z -]*):[ \t]*(.*)$', line)
-        if header and header.group(1) in CONTRACT_FIELDS:
+        if header and header.group(1) in (*CONTRACT_FIELDS, 'Goal budget rationale'):
             current = header.group(1)
             if current in fields:
                 raise ValueError(f'Duplicate contract field: {current}')
@@ -41,6 +41,8 @@ def validate_contract(text):
     for field in CONTRACT_FIELDS:
         if not fields.get(field, '').strip():
             raise ValueError(f'Missing or empty contract field: {field}')
+    if goal_max_turns == 100 and not fields.get('Goal budget rationale', '').strip():
+        raise ValueError('100 turns requires a nonempty Goal budget rationale: in the contract')
     return {key: value.strip() for key, value in fields.items()}
 
 
@@ -62,9 +64,16 @@ REVIEW_DOD = ('Definition of done for this card (goal judge): the contract below
               'this goal unfinished or unachievable.')
 
 
-def build_task_body(contract):
+def build_task_body(contract, goal_max_turns=BUDGET):
     return (REVIEW_DOD + '\n\n' + contract + '\n\nExecution: This is the selected autogoal slice, not a picker. '
             'Implement and verify this contract only. Do not discover or enqueue another task. '
+            'Own debugging, fixes, focused tests and review handoff on this card; no intermediate cards. '
+            'Fix and rerun in-scope failures until acceptance or 5 consecutive attempts without new evidence, '
+            'within the runtime budget and existing scope/ownership limits. '
+            'Stop at acceptance; do not burn unused turns. One native review lane is the independent review; '
+            'no extra reviewer subagents unless the contract explicitly requires them. '
+            'Before solution design or implementation, load `ponytail`; preserve test-driven-development and '
+            'never waive safety, acceptance criteria or required checks for a smaller diff. '
             'Read repository instructions and preserve dirty-file ownership. Hermes Agent/Desktop/Conduit '
             'and other upstream/vendor references are unmodified; changes stay inside the boundaries this profile\'s SOUL authorizes. '
             'Commit only with the autogoal agent_commit.sh helper to agent/<profile>/<card-id> (the daily merge train '
@@ -90,7 +99,7 @@ def build_task_body(contract):
             'reversible choices (design/visual direction, approach, review-artifact approval), hold only '
             'irreversible red-line steps, record each owner question in BLOCKERS.md with a default, and '
             'list them under "Questions (no reply = defaults apply)" in the handoff. The goal engine has a '
-            '50-turn budget; finish early only when genuinely complete. '
+            f'{goal_max_turns}-turn budget; finish early only when genuinely complete. '
             'Review handoff is not final completion: when same-card review is required, '
             'supply implementation/test evidence, then request '
             'native review; pending native review is not a missing implementation criterion. '
@@ -234,6 +243,8 @@ def main():
     p.add_argument('--workspace', required=True)
     p.add_argument('--title', required=True)
     p.add_argument('--contract-file', required=True)
+    p.add_argument('--goal-max-turns', type=int, choices=(50, 100), default=BUDGET,
+                   help='New worker budget; never resizes an existing owned card')
     p.add_argument('--source-snapshot', help='Scoped evidence snapshot captured before candidate selection')
     p.add_argument('--disjoint-terminal-triage', action='append', default=[], metavar='CARD_ID',
                    help='Governor-only attestation of resource-disjoint work; verify terminal claim under lock, preserve original card')
@@ -244,11 +255,12 @@ def main():
         raise SystemExit('Already a goal worker: execute the assigned card, never launch a nested goal.')
     contract = Path(args.contract_file).read_text().strip()
     try:
-        validate_contract(contract)
+        validate_contract(contract, args.goal_max_turns)
     except ValueError as error:
         raise SystemExit(str(error)) from error
     if args.validate_only:
         print(json.dumps({'outcome': 'contract_validated', 'fields': list(CONTRACT_FIELDS),
+                          'goal_max_turns': args.goal_max_turns,
                           'factual_validation': False}))
         return
     prefix = ['hermes', '-p', args.profile]
@@ -291,22 +303,22 @@ def main():
         except (ValueError, OSError, TypeError, KeyError) as error:
             raise SystemExit(str(error)) from error
         digest = hashlib.sha256((args.profile + '\n' + str(workspace) + '\n' + args.title + '\n' + contract).encode()).hexdigest()
-        body = build_task_body(contract)
+        body = build_task_body(contract, args.goal_max_turns)
         created = json.loads(run(prefix, *board, 'create', args.title, '--body', body,
                                  '--assignee', args.profile, '--workspace', 'dir:' + str(workspace),
-                                 '--goal', '--goal-max-turns', str(BUDGET), '--max-retries', str(MAX_RETRIES),
+                                 '--goal', '--goal-max-turns', str(args.goal_max_turns), '--max-retries', str(MAX_RETRIES),
                                  '--completion-contract', 'local-only', '--created-by', 'autogoal',
                                  '--idempotency-key', 'autogoal:' + digest, '--json'))
         task_id = created['id']
         saved = json.loads(run(prefix, *board, 'show', task_id, '--json'))
         task = saved.get('task', saved)
         task.update(goal_fields(prefix, task_id))
-        assert task['goal_mode'] and task['goal_max_turns'] == BUDGET, task
+        assert task['goal_mode'] and task['goal_max_turns'] == args.goal_max_turns, task
         assert task['assignee'] == args.profile, task
         assert task['workspace_kind'] == 'dir' and Path(task['workspace_path']).resolve() == workspace, task
         assert task['completion_contract'] == 'local-only', task
         receipt = {'outcome': 'handed_off', 'task_id': task_id, 'profile': args.profile,
-                   'workspace': str(workspace), 'goal_mode': True, 'goal_max_turns': BUDGET,
+                   'workspace': str(workspace), 'goal_mode': True, 'goal_max_turns': args.goal_max_turns,
                    'status': task['status']}
         receipt = record_handoff(prefix, journal_dir, home, args.profile, receipt)
         # Notification setup and dispatch may have advanced the card. Preserve

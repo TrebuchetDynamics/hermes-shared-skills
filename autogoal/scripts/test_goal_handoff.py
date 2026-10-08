@@ -102,6 +102,14 @@ class HandoffTests(unittest.TestCase):
         self.assertTrue(body.startswith(m.REVIEW_DOD + '\n\n' + text))
         self.assertIn('NOT part of this goal', body)
 
+    def test_worker_owns_debug_fix_test_review_without_intermediate_cards(self):
+        body = m.build_task_body('Objective: implement scoped repair\n', 100)
+        self.assertIn('Own debugging, fixes, focused tests and review handoff on this card', body)
+        self.assertIn('5 consecutive attempts without new evidence', body)
+        self.assertIn('Stop at acceptance; do not burn unused turns', body)
+        self.assertIn('One native review lane', body)
+        self.assertIn('100-turn budget', body)
+
     def test_worker_checks_changed_dependency_delivery_boundary(self):
         body = m.build_task_body('Objective: add shared CLI error serializer\n')
         self.assertIn('Trace changed imports to their runtime delivery boundary', body)

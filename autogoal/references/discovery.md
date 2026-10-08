@@ -1,12 +1,13 @@
 # Autogoal — Discovery, ranking and selection
 
-Load when `goals.py next` returns nothing eligible, the repository has no `goals.json`, or this profile has no `repo-docs` cron job (then the repo-docs prepass section applies). The Operating priorities in SKILL.md override anything here.
+Load only when no usable milestone backlog task remains after scoped repair and TODO fallback. A usable task skips this reference even without goals.json or a docs cron. The Operating priorities in SKILL.md override anything here.
 
 ## Start with a bounded repo-docs pass
 
-For a project workspace without a scheduled `repo-docs` job (Operating priority 2),
-the first project stage is a `repo-docs` pass, before building or ranking the goal
-shortlist. With such a job, skip this section and work from its TODO.md. First resolve the active workspace, read
+Only when no usable backlog task remains, a missing/stale backlog without an
+enabled `repo-docs` job may need a bounded pass (Operating priority 2), at most once
+per day. With such a job, skip this section and search the milestone's gaps.
+Do not repeat a docs pass merely because a picker tick arrived. First resolve the active workspace, read
 repository instructions and explicit task boundaries, and check live ownership.
 These safety checks do not replace the documentation pass. Load the active
 profile's `repo-docs` skill and its STE-inspired reference with `skill_view` and
@@ -82,14 +83,14 @@ unapproved work, and `Blocked / Needs decision` items until their actual gate is
 resolved. Preserve task IDs and authoritative tracker links rather than copying the
 queue into a competing ledger. A standalone bare `/repo_docs` (or the profile's
 `repo-docs` cron job) maintains docs and this handoff. `/autogoal` runs the bounded
-repo-docs pass above only when Operating priority 2 says no repo-docs job covers the
-repository, then selects only one remaining eligible slice under its existing
+repo-docs pass above only when Operating priority 2 calls for missing/stale backlog
+repair without an enabled docs job, then selects one remaining eligible slice under its existing
 goal-worker contract. Do not manufacture tasks
 when no supported candidate exists.
 
 ## Escape an exhausted shortlist without escaping authority
 
-On EVERY idle occurrence, including after terminal-result reconciliation, do not
+On EVERY idle occurrence without a usable backlog task, including after terminal-result reconciliation, do not
 infer repository-wide absence of work from unchanged fingerprints of an exhausted
 candidate set. Do not wait for two consecutive no-selection receipts to explore.
 A fingerprint revalidates inspected bytes, not discovery completeness. Refresh
@@ -147,7 +148,7 @@ The installed verify-on-stop guard uses per-session/workspace evidence and marks
 
 ## Rank by real project contribution
 
-Honor explicit priorities, locked gates, accepted contracts, and live ownership first. Reject completed, unchanged-repeat, unsupported, conflicting, unauthorized, or unverifiable candidates before ranking. Compare eligible candidates by: (1) severity/user impact and contribution to the nearest accepted milestone; (2) dependency unblock leverage; (3) strength of current evidence; (4) feasibility of a meaningful verified slice within 50 goal turns; (5) change risk, review burden, and resources. This is a reasoned comparison, not invented numerical precision. A small high-leverage doc/contract fix can beat a speculative code rewrite; a real broken flow normally beats cosmetic docs/refactoring. Do not rotate categories mechanically or always choose the easiest green check.
+Honor explicit priorities, locked gates, accepted contracts, and live ownership first. Reject completed, unchanged-repeat, unsupported, conflicting, unauthorized, or unverifiable candidates before ranking. Compare eligible candidates by: (1) severity/user impact and contribution to the nearest accepted milestone; (2) dependency unblock leverage; (3) strength of current evidence; (4) feasibility of a meaningful verified slice within the selected 50/100 goal turns; (5) change risk, review burden, and resources. This is a reasoned comparison, not invented numerical precision. A small high-leverage doc/contract fix can beat a speculative code rewrite; a real broken flow normally beats cosmetic docs/refactoring. Do not rotate categories mechanically or always choose the easiest green check.
 
 Every selection must answer: What currently hurts or is missing? Who/which milestone benefits? What becomes possible or reliable after this change? What exact artifact/check demonstrates that improvement? Prefer implementation plus focused verification when safe and within scope; investigation-only needs a specific uncertainty and decision/reproducer it will resolve. Architecture/refactor success must remove a demonstrated coupling, duplication, ownership, or change-friction problem while preserving the contract—not just produce an ADR. Documentation success must enable a real workflow or correct a proven contract/setup mismatch. When accumulating uncommitted slices, preserve all predecessor diffs, group changes into reviewable receipts, and record the agent branch/sha from Operating priority 14 rather than repeatedly consuming full-suite budget; never commit to the checked-out or default branch. After a clean bughunt, reconcile its result and advance to the next accepted gate or a distinct valuable task—do not hunt indefinitely on the same cleared surface without new evidence. If all milestone-critical work is owner-blocked, choose disjoint useful documentation/debt work only when it has a concrete project payoff; otherwise report the genuine gate.
 
@@ -163,4 +164,4 @@ Choose ordinary reversible engineering details autonomously using repository con
 
 Inspect dirty-file ownership and active work claims. A dirty tree is not a blanket blocker (see Operating priority 10 for this profile's own leftover work): choose a disjoint task, a read-only validation, or a missing test that does not race another owner. Do not overwrite another worker, duplicate a claimed slice, or treat already-running goal/cron work as available. Preserve workspace and upstream boundaries; for Wing, Hermes Agent/Desktop/Conduit stay unmodified and changes belong only in the authorized Wing/Wing Link boundaries.
 
-State the selection in one line with its source. Define every progress-contract field below before activating the native goal execution stage. The budget is 50 goal turns, explicitly supplied to the native worker, not 20 or 12. Goal turns can contain many tool calls; they are not tool-call iterations. Stop early when complete, review-required, or genuinely blocked.
+State the selection in one line with its source. Define every progress-contract field below before activating the native goal execution stage. The budget is 50 goal turns by default, or explicit 100 with the contract rationale in references/handoff.md; supply it to the native worker, not a prompt-only limit. Goal turns can contain many tool calls; they are not tool-call iterations. Stop early when complete, review-required, or genuinely blocked.

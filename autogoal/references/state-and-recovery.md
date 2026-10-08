@@ -12,6 +12,16 @@ For a previous goal handoff, prefer the shipped read-only helper:
 
 It verifies the exact returned card ID and assignee, requires mapping task fields and lists of mapping run/event records, and rejects unknown receipt/snapshot schemas without rewriting the journal. Receipts support a nonempty top-level task_id, or an explicitly observed current_handoff.task_id when the top-level task_id is null/absent; arbitrary key searches and prose-derived IDs are not supported. CLI transport is substituted in unit fixtures; use a real readback before claiming current card state. Failure to read back does not undo an earlier write. The helper rejects an explicitly wrong run task_id. The CLI show envelope omits run task_id, so it retains that boundary rather than inventing provenance. It reports run_profile and run_ownership: historical runs from another profile or unknown provenance are card_run_observed, not this profile's worker_observed. A card's current assignee alone does not prove the latest run belongs to it.
 
+The supported `show --json` envelope is `{task, latest_summary, runs, events,
+comments, ...}`: status is `.task.status`; select the latest run by greatest numeric
+ID, not incidental list order. `kanban runs <id>` prints a table. Do not probe
+invented JSON shapes or duplicate the helper's readback in the same picker phase.
+Reconcile reports `selection_required`, not unconditional `discovery_required`:
+the picker checks usable backlog before discovery. This hint never overrides live
+ownership or retry/backoff.
+Keep the original card/run and observed `metadata.worker_session_id` together;
+absence of that anchor is unknown, never permission to invent or replace a session.
+
 ## Tool responses have variants
 
 Inspect returned keys before indexing. Generated wrapper docstrings can summarize only the ordinary result:
