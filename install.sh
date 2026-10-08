@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Wire hermes-shared-skills into Hermes profiles.
 #
-#   install.sh --profiles default,myproject [--disable-fleet] [--telegram-menu] [--soul] [--allow-all] [--prune] [--impeccable] [--dry-run]
+#   install.sh --profiles default,myproject [--replace-root OLD_PATH] [--disable-fleet] [--telegram-menu] [--soul] [--allow-all] [--prune] [--impeccable] [--dry-run]
 #
 # Per profile: adds this folder to skills.external_dirs, writes cron monitor wrappers into the
 # profile's scripts/ folder, optionally disables the fleet-* skills (project profiles) and pins the
@@ -9,10 +9,11 @@
 # prompt including the protected AGENTS.md/SOUL.md write gate (--allow-all), and disables the audited unused skills in extras/install/disabled-skills.txt (--prune). Cron jobs are not created automatically; see extras/cron/README.md.
 set -euo pipefail
 repo=$(cd "$(dirname "$0")" && pwd)
-profiles="" disable_fleet=false telegram_menu=false soul=false allow_all=false prune=false impeccable=false dry_run=false
+profiles="" replace_root="" disable_fleet=false telegram_menu=false soul=false allow_all=false prune=false impeccable=false dry_run=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --profiles) profiles=$2; shift 2;;
+    --replace-root) replace_root=$2; shift 2;;
     --disable-fleet) disable_fleet=true; shift;;
     --telegram-menu) telegram_menu=true; shift;;
     --soul) soul=true; shift;;
@@ -44,7 +45,7 @@ else:
 export INSTALL_ARGS
 INSTALL_ARGS=$(python3 -c 'import json,sys; print(json.dumps({"repo": sys.argv[1], "profiles": sys.argv[2].split(","),
   "disable_fleet": sys.argv[3]=="true", "telegram_menu": sys.argv[4]=="true", "dry_run": sys.argv[5]=="true",
-  "soul": sys.argv[6]=="true", "allow_all": sys.argv[7]=="true", "prune": sys.argv[8]=="true"}))' "$repo" "$profiles" "$disable_fleet" "$telegram_menu" "$dry_run" "$soul" "$allow_all" "$prune")
+  "soul": sys.argv[6]=="true", "allow_all": sys.argv[7]=="true", "prune": sys.argv[8]=="true", "replace_root": sys.argv[9]}))' "$repo" "$profiles" "$disable_fleet" "$telegram_menu" "$dry_run" "$soul" "$allow_all" "$prune" "$replace_root")
 "$py" -I -c 'import os, sys, runpy; sys.path.insert(0, sys.argv[1]); os.environ.setdefault("HERMES_HOME", os.path.expanduser("~/.hermes")); import hermes_bootstrap; runpy.run_path(sys.argv[2], run_name="__main__")' "$agent_dir" "$repo/extras/install/install_helper.py"
 
 if $impeccable && ! $dry_run; then python3 "$repo/extras/vendor/sync_vendor.py"; fi   # --impeccable kept as the "install vendored skills" switch

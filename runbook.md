@@ -40,6 +40,13 @@ hermes -p <profile> skills list
 Then inspect a fresh session's discovery result. Existing sessions may retain cached content.
 Do not restart healthy workers solely to distribute wording.
 
+## Optional STT setup
+
+Use the explicit-home preview and apply procedure in [team setup](docs/team-setup.md).
+Preserve a private configuration backup first. The helper does not install local speech
+dependencies or test recognition. On failure, inspect the three STT keys before retrying;
+the multi-command update is not atomic. Do not run it concurrently with other config writers.
+
 ## Default and project setup
 
 `bootstrap.sh` changes default-profile settings, disables approval gates, prunes skills, installs vendors, and creates jobs.

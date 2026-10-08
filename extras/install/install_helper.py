@@ -37,6 +37,18 @@ def ensure_list(node, key):
     return node[key]
 
 
+# Validate the entire selection before writing even the first profile.
+for name in args['profiles']:
+    if not isinstance(name, str) or not name or name in {'.', '..'} or '/' in name or '\\' in name:
+        raise SystemExit('Invalid profile name: choose a profile ID, not a path')
+    ph = profile_home(name)
+    if not ph.resolve().is_relative_to(home.resolve()) or ph.is_symlink():
+        raise SystemExit('Profile resolves outside the selected Hermes home or is a symlink')
+    targets = [ph / 'config.yaml', ph / 'SOUL.md'] + [
+        ph / 'scripts' / filename for filename in {**WRAPPERS, **DEFAULT_ONLY}]
+    if any(not path.resolve().is_relative_to(ph.resolve()) for path in targets):
+        raise SystemExit('Managed target resolves outside the selected profile')
+
 for name in args['profiles']:
     ph = profile_home(name)
     cfg_path = ph / 'config.yaml'
@@ -48,6 +60,21 @@ for name in args['profiles']:
 
     skills = data.setdefault('skills', {})
     ext = ensure_list(skills, 'external_dirs')
+    old_root = args.get('replace_root')
+    if old_root:
+        old_root = Path(old_root).expanduser().resolve()
+        rewritten = []
+        for entry in ext:
+            replacement = str(repo) if Path(str(entry)).expanduser().resolve() == old_root else entry
+            if replacement != str(repo) or replacement not in rewritten:
+                rewritten.append(replacement)
+        if list(ext) != rewritten:
+            ext[:] = rewritten
+            changes.append(f'replace external root {old_root} -> {repo}')
+    # Report local precedence without deleting or modifying teammate overrides.
+    for local in sorted((ph / 'skills').rglob('SKILL.md')):
+        if (repo / local.parent.name / 'SKILL.md').is_file():
+            print(f'[{name}] possible local shadow: {local}')
     if str(repo) not in [str(Path(os.path.expanduser(str(e))).resolve()) for e in ext]:
         ext.append(str(repo)); changes.append(f'external_dirs += {repo}')
 

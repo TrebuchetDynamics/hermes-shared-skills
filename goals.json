@@ -23,6 +23,11 @@
       "depends_on": [],
       "evidence": [
         {
+          "kind": "executed",
+          "ref": "python autogoal/scripts/test_pipeline.py -v (fixture lifecycle only)",
+          "result": "pass"
+        },
+        {
           "kind": "inspection",
           "ref": "autogoal/scripts/start_goal.py",
           "result": "pass"
@@ -41,6 +46,11 @@
     {
       "depends_on": [],
       "evidence": [
+        {
+          "kind": "executed",
+          "ref": "python autogoal/scripts/test_check_receipt.py -v",
+          "result": "pass"
+        },
         {
           "kind": "inspection",
           "ref": "repo-docs/scripts/goals.py",
@@ -115,7 +125,32 @@
         },
         {
           "kind": "executed",
+          "ref": "TMPDIR=/home/xel/.hermes/cache/scratch PYTHONDONTWRITEBYTECODE=1 python extras/install/smoke_stt.py",
+          "result": "pass"
+        },
+        {
+          "kind": "executed",
+          "ref": "TMPDIR=/home/xel/.hermes/cache/scratch PYTHONDONTWRITEBYTECODE=1 python extras/install/test_configure_stt.py",
+          "result": "pass"
+        },
+        {
+          "kind": "executed",
+          "ref": "TMPDIR=/home/xel/.hermes/cache/scratch PYTHONDONTWRITEBYTECODE=1 python extras/install/test_provisioning.py -v",
+          "result": "pass"
+        },
+        {
+          "kind": "executed",
           "ref": "TMPDIR=/home/xel/.hermes/cache/scratch python extras/monitors/test_autogoal_gate.py -v",
+          "result": "pass"
+        },
+        {
+          "kind": "executed",
+          "ref": "python extras/install/test_provisioning.py -v",
+          "result": "pass"
+        },
+        {
+          "kind": "executed",
+          "ref": "python extras/install/test_provisioning.py -v; make test (curated Linux portability snapshot)",
           "result": "pass"
         },
         {
@@ -133,13 +168,21 @@
         "SETUP-2",
         "SETUP-3",
         "SETUP-4",
-        "SETUP-ABSENT-BOARD"
+        "SETUP-ABSENT-BOARD",
+        "SETUP-AUDIO",
+        "SETUP-OPTIONS",
+        "SETUP-TEAM-STT"
       ],
       "title": "Wire profiles and discover canonical shared skills"
     },
     {
       "depends_on": [],
       "evidence": [
+        {
+          "kind": "executed",
+          "ref": "TMPDIR=/home/xel/.hermes/cache/scratch PYTHONDONTWRITEBYTECODE=1 python scripts/check.py",
+          "result": "pass"
+        },
         {
           "kind": "executed",
           "ref": "make test",
@@ -197,14 +240,6 @@
     },
     {
       "depends_on": [],
-      "goal": "SETUP",
-      "id": "SETUP-1",
-      "section": "Now",
-      "status": "open",
-      "title": "Prove default and project provisioning twice with a fake Hermes CLI"
-    },
-    {
-      "depends_on": [],
       "goal": "WORKER",
       "id": "WORKER-1",
       "section": "Now",
@@ -246,10 +281,10 @@
     {
       "depends_on": [],
       "goal": "SETUP",
-      "id": "SETUP-4",
+      "id": "SETUP-AUDIO",
       "section": "Next",
       "status": "open",
-      "title": "Prove canonical wrapper relocation and discovery inputs in composed setup fixtures"
+      "title": "Run opt-in non-sensitive audio acceptance with installed local dependency and cached model, without downloads"
     },
     {
       "depends_on": [],
@@ -270,6 +305,14 @@
     {
       "depends_on": [],
       "goal": "SETUP",
+      "id": "SETUP-1",
+      "section": "Done",
+      "status": "done",
+      "title": "Prove default and project provisioning twice with a fake Hermes CLI"
+    },
+    {
+      "depends_on": [],
+      "goal": "SETUP",
       "id": "SETUP-2",
       "section": "Done",
       "status": "done",
@@ -286,10 +329,34 @@
     {
       "depends_on": [],
       "goal": "SETUP",
+      "id": "SETUP-4",
+      "section": "Done",
+      "status": "done",
+      "title": "Prove canonical wrapper relocation and discovery inputs in composed setup fixtures"
+    },
+    {
+      "depends_on": [],
+      "goal": "SETUP",
       "id": "SETUP-ABSENT-BOARD",
       "section": "Done",
       "status": "done",
       "title": "Allow first picker when Kanban is uninitialized without hiding established state errors"
+    },
+    {
+      "depends_on": [],
+      "goal": "SETUP",
+      "id": "SETUP-OPTIONS",
+      "section": "Done",
+      "status": "done",
+      "title": "Extend composed setup fixtures for custom-profile adoption, SOUL/menu/prune options and complete default job arguments"
+    },
+    {
+      "depends_on": [],
+      "goal": "SETUP",
+      "id": "SETUP-TEAM-STT",
+      "section": "Done",
+      "status": "done",
+      "title": "Add portable team onboarding and explicit opt-in STT configuration"
     },
     {
       "depends_on": [],

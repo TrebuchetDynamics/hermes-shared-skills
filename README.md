@@ -54,6 +54,12 @@ flowchart LR
 
 No repository-owned HTTP API requires OpenAPI. No new architecture decision requires an ADR in this pass.
 
+## Team onboarding
+
+For shared skills and optional local speech-to-text without fleet approval or cron changes,
+start with [Team setup](docs/team-setup.md). The STT helper previews by default and requires
+an explicit target home and `--apply` to write settings.
+
 ## Quick start
 
 Prerequisites: an installed Hermes CLI, Bash, Python 3.12+, and an existing project workspace.

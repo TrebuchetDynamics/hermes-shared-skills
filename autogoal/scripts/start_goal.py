@@ -119,7 +119,7 @@ def build_task_body(contract):
 
 
 def run(prefix, *args):
-    return subprocess.check_output(prefix + list(args), text=True).strip()
+    return subprocess.check_output(prefix + list(args), text=True, timeout=30).strip()
 
 
 def profile_home(prefix):

@@ -120,6 +120,40 @@ The helper uses the supported profile-scoped CLI, a per-profile handoff lock, st
 
 When already inside a Kanban worker (`HERMES_KANBAN_TASK` is set), execute only its assigned contract, never run the picker or helper. The default manager does not enqueue skill-maintenance workers; it records proposed lessons for the owner. Project profiles must not edit the shared skill.
 
+## Source-bound check receipts (Linux)
+
+For an authorized local check, `scripts/check_receipt.py` records source hashes
+before and after execution, the command, exit status, elapsed time, Python
+runtime/package identity, and a hash of selected environment settings. It runs
+once, with a maximum 300-second timeout. A timeout kills the check's process
+group. It never retries a mutation or approves a review.
+
+```sh
+python <this-skill-directory>/scripts/check_receipt.py run \
+  --workspace /absolute/project --receipt /private/scratch/check.json \
+  --path src/changed.py --path requirements.lock --path verification-environment.json \
+  --timeout 60 -- python -m unittest tests.test_changed
+python <this-skill-directory>/scripts/check_receipt.py reuse \
+  --workspace /absolute/project --receipt /private/scratch/check.json \
+  -- python -m unittest tests.test_changed
+```
+
+Declare every relevant source, dependency and non-secret environment input.
+Include non-Python tool versions and backend settings in the environment input;
+the helper cannot infer the dependency closure. Keep receipts private: they
+contain paths, commands, runtime metadata and a bounded failure diagnostic.
+Never use this helper for secret-bearing checks. Never supply credentials in command
+arguments or commit machine-specific receipts. Failed checks, timeouts, changed
+inputs, changed runtime or changed commands reject reuse. A matching receipt
+proves only its declared check, not that selection remains useful or a native
+review system acknowledged it. Existing receipts are never overwritten.
+
+Reusable verification lesson: test timeout descendants, not just the immediate
+process; test source drift during the check as well as between checks; compare
+both source and environment before and after. A fixture review sink must echo the
+exact candidate and receipt, and must stay labeled fixture evidence. Read native
+review acknowledgement separately before claiming a verified review handoff.
+
 ## Execute and verify (goal worker)
 
 Implement only the selected slice with regression tests and real checks, or execute the selected bounded reproduction/acceptance investigation. Do not ask the user to choose among ordinary safe candidates. Resolve retrievable facts yourself. Iterate fix → rerun until acceptance (Operating priority 4). Stop on the slice's completion, runtime budget, 5 attempts without new evidence, an ownership conflict, or a necessary owner decision. Do not start a second task.

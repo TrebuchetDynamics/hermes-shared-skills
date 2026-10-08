@@ -22,6 +22,9 @@ These entries describe notable changes present in the working tree. They do not 
 - The repository now has canonical product, design, verification, and local operations documents.
   A machine-readable goal ledger and bounded backlog expose remaining acceptance gaps.
 
+- Added conservative team onboarding and an opt-in local/off STT helper with explicit-home
+  preview, CLI readback, bounded calls, and offline plus real-CLI smoke coverage.
+
 ## Release history boundary
 
 No versioned release receipt was established in this bootstrap. Git commits are not treated as published releases.

@@ -34,8 +34,64 @@ A local pass is not a claim that a remote CI job ran.
 | PROOF | `repo-docs/scripts/test_goals.py`; handoff acceptance contract | Require executed/pass evidence and preserve criterion-specific evidence boundaries | A weak or unrelated executed check can still satisfy the JSON rule |
 | MERGE | `fleet-governor/scripts/test_merge_train.py` | Gate the exact candidate, distinguish baseline failures, preserve scoped integration | Real protected remote and PR behavior remain unverified |
 | QUESTIONS | `extras/maintenance/test_question_relay.py`; blocker skill contract | Parse real-shaped question blocks, suppress repeats, enforce cooldown | Actual operator delivery and receipt remain unverified |
-| SETUP | `extras/install/test_install.py`, `test_new_profile.py`; `extras/monitors/test_autogoal_gate.py`; vendor sync tests | Preserve wrappers; attach the busy gate in hourly/15m jobs; retain linkage, continuity, delivery, no-cron and job idempotency; project identity wins over foreign busy same-workspace cards; root fallback and terminal events remain valid | Full bootstrap/create/adopt composition and fresh discovery remain unproved |
+| SETUP | `extras/install/test_install.py`, `test_new_profile.py`; `extras/monitors/test_autogoal_gate.py`; vendor sync tests | Preserve wrappers; attach the busy gate in hourly/15m jobs; retain linkage, continuity, delivery, no-cron and job idempotency; project identity wins over foreign busy same-workspace cards; root fallback and terminal events remain valid | Fake-CLI bootstrap/create/adopt composition covered by `test_provisioning.py`; real fresh-machine discovery remains unproved |
 | OFFLINE | `scripts/test_check.py`, `test_validate_skills.py` and `make test` | Discover eligible suites, reject contract errors, exclude model-backed tests | No live provider, delivery, or whole-fleet acceptance claim |
+
+## Provisioning composition coverage
+
+`python extras/install/test_provisioning.py -v` runs the real bootstrap, profile,
+installer, and YAML-helper paths with an isolated fake Hermes CLI. It checks
+repeat-run profile bytes and job-state stability, profile separation, canonical
+skill roots, managed wrappers, identity preservation, dry-run, and no-cron flags.
+A negative control disconnects the installer only in the temporary copy and
+requires the wiring assertion to fail. The tests disable vendor downloads.
+They do not prove real Hermes fresh-machine discovery, live cron delivery, or
+cross-platform setup. Machine-specific execution receipts remain private; the
+portable evidence summary is [Linux portability verification](docs/verification/linux-portability.md).
+
+## Linux portability and pipeline continuation
+
+`test_provisioning.py` also covers explicit old-root replacement after checkout
+relocation, retained unrelated roots (including duplicates), custom wrappers,
+local skill overrides, dry-run and second-run stability. Customized old-profile
+adoption checks exact additive menu/prune values, SOUL snippets, credentials-as-
+fixture bytes, existing jobs and complete default job argument lists. Traversal
+and symlinked out-of-profile write targets must fail before any profile mutation.
+
+`smoke_discovery.py --agent-dir <installed-source>` is an opt-in real-Hermes
+check. Fresh CLI processes list representative first-party skills. A fresh
+installed resolver loads their contents from the exact canonical directories.
+It uses a temporary home and does not run a model, scheduler or provider.
+
+`autogoal/scripts/test_pipeline.py` composes real ledger selection, dispatch
+logic, SQLite goal-field readback, a bounded fixture worker subprocess, a
+source-bound check receipt, and reconciliation with a fake review sink. The
+sink must acknowledge the exact artifact hash and receipt. Duplicate selection
+must create one card; source drift must create none. A timed-out readback must
+preserve the original receipt. This is fixture evidence, not native review.
+
+`test_check_receipt.py` checks successful reuse, source/dependency/environment/
+command drift, failure diagnostics, in-check drift and timeout descendant cleanup.
+`test_cli_bounds.py` proves CLI deadline propagation without blind mutation retry.
+The native three-attempt setting is checked at dispatch. Native retry exhaustion,
+provider execution and native acknowledged review remain separately unverified.
+The automatic endpoint is a verified review handoff, never approval or integration.
+
+`test_local_stt.py` checks absent/empty model files, missing dependency, explicit
+audio opt-in, socket denial and expected-phrase handling through a fake backend.
+It does not prove actual speech recognition. `local_stt.py` can perform that
+separate optional check with already-installed dependencies and model files.
+
+## STT setup checks
+
+`python extras/install/test_configure_stt.py` runs offline tests for preview, explicit-home
+CLI scoping, typed arguments, mutation order, invalid input, and failure/readback handling.
+It is discovered by the offline runner.
+`python extras/install/smoke_stt.py` is a separate, opt-in installed-Hermes check.
+It verifies preview, repeated local apply, unrelated-setting preservation, and disabling
+in a temporary home. It performs no inference. It does not prove actual transcription
+or fresh-machine dependency installation. This authorized isolated smoke test is distinct
+from the earlier documentation-only receipt below.
 
 ## Documentation checks
 

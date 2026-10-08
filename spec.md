@@ -67,6 +67,12 @@ The gate uses project `HERMES_HOME` as authoritative identity before workspace m
 Default/root invocations retain workspace inference. A foreign busy card in the same workspace cannot gate a project invocation.
 See the [cron template notes](extras/cron/README.md) for job wiring.
 
+The optional `extras/install/configure_stt.py` configures local/off STT for an explicit
+existing home through the Hermes CLI. Preview is non-mutating. Apply verifies each setting
+with JSON readback and selects provider/model before enabling STT. Calls time out after
+30 seconds, with no automatic retries. Partial application is possible; no audio or
+dependency installation occurs. See [team setup](docs/team-setup.md).
+
 ## Failure and security behavior
 
 - Invalid ledger JSON or unsupported schemas fail rather than establish completion.

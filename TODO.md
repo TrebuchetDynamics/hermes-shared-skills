@@ -16,12 +16,12 @@ Generated from `goals.json` by `goals.py render`. `met` requires an executed, pa
 | Goal | Status | Evidence | Task |
 | --- | --- | --- | --- |
 | DOCS: Keep core docs and goal backlog current | partial | inspection `repo-docs/SKILL.md` → pass | DOCS-1, DOCS-2 |
-| WORKER: Dispatch one bounded goal-linked worker | unverified | inspection `autogoal/scripts/start_goal.py` → pass | WORKER-1, WORKER-2 |
-| PROOF: Keep executed evidence tied to acceptance | partial | inspection `repo-docs/scripts/goals.py` → pass | PROOF-1, PROOF-2 |
+| WORKER: Dispatch one bounded goal-linked worker | unverified | executed `python autogoal/scripts/test_pipeline.py -v (fixture lifecycle only)` → pass; inspection `autogoal/scripts/start_goal.py` → pass | WORKER-1, WORKER-2 |
+| PROOF: Keep executed evidence tied to acceptance | partial | executed `python autogoal/scripts/test_check_receipt.py -v` → pass; inspection `repo-docs/scripts/goals.py` → pass | PROOF-1, PROOF-2 |
 | MERGE: Gate and integrate finished work safely | unverified | inspection `fleet-governor/references/merge-train.md` → pass | MERGE-1, MERGE-2 |
 | QUESTIONS: Relay owner questions while work continues | partial | inspection `extras/maintenance/question_relay.py` → pass | QUESTIONS-1, QUESTIONS-2 |
-| SETUP: Wire profiles and discover canonical shared skills | unverified | executed `PYTHONDONTWRITEBYTECODE=1 TMPDIR=/home/xel/.hermes/cache/scratch make test` → pass; executed `PYTHONDONTWRITEBYTECODE=1 TMPDIR=/home/xel/.hermes/cache/scratch python3 extras/install/test_new_profile.py -v` → pass; executed `PYTHONDONTWRITEBYTECODE=1 TMPDIR=/home/xel/.hermes/cache/scratch python3 extras/monitors/test_autogoal_gate.py -v` → pass; executed `TMPDIR=/home/xel/.hermes/cache/scratch python extras/monitors/test_autogoal_gate.py -v` → pass; inspection `extras/install/new_profile.sh` → pass | SETUP-1, SETUP-4 |
-| OFFLINE: Provide one reliable offline verification entry point | met | executed `make test` → pass; executed `python fleet-status/scripts/test_status.py` → pass | — |
+| SETUP: Wire profiles and discover canonical shared skills | unverified | executed `PYTHONDONTWRITEBYTECODE=1 TMPDIR=/home/xel/.hermes/cache/scratch make test` → pass; executed `PYTHONDONTWRITEBYTECODE=1 TMPDIR=/home/xel/.hermes/cache/scratch python3 extras/install/test_new_profile.py -v` → pass; executed `PYTHONDONTWRITEBYTECODE=1 TMPDIR=/home/xel/.hermes/cache/scratch python3 extras/monitors/test_autogoal_gate.py -v` → pass; executed `TMPDIR=/home/xel/.hermes/cache/scratch PYTHONDONTWRITEBYTECODE=1 python extras/install/smoke_stt.py` → pass; executed `TMPDIR=/home/xel/.hermes/cache/scratch PYTHONDONTWRITEBYTECODE=1 python extras/install/test_configure_stt.py` → pass; executed `TMPDIR=/home/xel/.hermes/cache/scratch PYTHONDONTWRITEBYTECODE=1 python extras/install/test_provisioning.py -v` → pass; executed `TMPDIR=/home/xel/.hermes/cache/scratch python extras/monitors/test_autogoal_gate.py -v` → pass; executed `python extras/install/test_provisioning.py -v` → pass; executed `python extras/install/test_provisioning.py -v; make test (curated Linux portability snapshot)` → pass; inspection `extras/install/new_profile.sh` → pass | SETUP-AUDIO |
+| OFFLINE: Provide one reliable offline verification entry point | met | executed `TMPDIR=/home/xel/.hermes/cache/scratch PYTHONDONTWRITEBYTECODE=1 python scripts/check.py` → pass; executed `make test` → pass; executed `python fleet-status/scripts/test_status.py` → pass | — |
 
 <!-- goals:coverage:end -->
 
@@ -77,15 +77,6 @@ Generated from `goals.json` by `goals.py render`. `met` requires an executed, pa
 - Acceptance: One new question set reaches the sink with the profile and defaults context. Repeated output produces no second delivery. Run extras/maintenance/test_question_relay.py and make test.
 - Dependencies: none. Ownership: unclaimed.
 
-### SETUP-1
-
-- [ ] Prove default and project provisioning twice with a fake Hermes CLI. Goal: SETUP.
-- Payoff: wire profiles and discover canonical shared skills without replacing acceptance with a claim.
-- Sources: [requirement](PRD.md#requirements-and-acceptance), [implementation](extras/install/test_install.py), [verification](test-plan.md#risk-based-scenarios).
-- Scope: Add a shell-level offline composed fixture for bootstrap.sh and new_profile.sh using a fake runtime/profile/cron CLI, isolated HERMES_HOME, and --no-vendor.
-- Exclusions: real profiles, secrets, live jobs, paid calls, real remotes, upstream Hermes, and unrelated workers' files.
-- Acceptance: Two runs preserve custom files and do not duplicate jobs. Verify job workdir, delivery, schedule, --no-cron, and both default jobs under --no-cleanup-cron. Run the installer suite and make test.
-- Dependencies: none. Ownership: unclaimed.
 
 ## Next
 
@@ -139,15 +130,21 @@ Generated from `goals.json` by `goals.py render`. `met` requires an executed, pa
 - Acceptance: The helper reports recoverable failures without publishing secrets or suppressing an independent valid question. Dry-run does not write state. Run the relay suite and make test.
 - Dependencies: none. Ownership: unclaimed.
 
-### SETUP-4
 
-- [ ] Prove canonical wrapper relocation and discovery inputs in composed setup fixtures. Goal: SETUP.
-- Payoff: extend SETUP-1 job composition to canonical shared-skill inputs without claiming live discovery.
-- Sources: [requirement](PRD.md#requirements-and-acceptance), [installer tests](extras/install/test_install.py), [verification](test-plan.md#risk-based-scenarios).
-- Scope: Compose real installer helpers with an offline fake CLI. Assert external_dirs and generated wrapper targets after checkout relocation, preserving custom wrappers.
-- Exclusions: profile writes outside fixtures, OMH installation, live discovery, paid calls, scheduler changes, commits, and pushes.
-- Acceptance: A relocated fixture resolves canonical scripts and discovery configuration. A second run is byte-identical. Run the composed fixture and make test. Live discovery remains separately unverified.
-- Dependencies: none. Ownership: unclaimed.
+
+### SETUP-AUDIO
+
+- [ ] Run opt-in local audio acceptance without downloads. Goal: SETUP.
+- Payoff: distinguish working speech recognition from configuration readiness.
+- Scope: an already-installed local dependency, cached model, approved non-sensitive
+  audio and the expected-phrase check in `extras/install/local_stt.py`.
+- Acceptance: The bounded offline transcription exits 0 and reports phrase match.
+  Dependency/configuration checks alone do not satisfy this criterion.
+- Exclusions: automatic package/model installation, cloud fallback, sensitive audio,
+  live profile changes and paid providers.
+- Sources: [team setup](docs/team-setup.md#offline-readiness-and-opt-in-audio-check).
+- Dependencies: installed local dependency and cached model; absent in this run.
+  Ownership: unclaimed. No new owner-only decision is required.
 
 ## Blocked / Needs decision
 
@@ -156,6 +153,41 @@ None. No new owner-only question is required for this evidence-backed bootstrap.
 
 ## Done
 
+### SETUP-1
+
+- [x] Prove default and project provisioning twice with a fake Hermes CLI. Goal: SETUP.
+- Payoff: wire profiles and discover canonical shared skills without replacing acceptance with a claim.
+- Sources: [requirement](PRD.md#requirements-and-acceptance), [implementation](extras/install/test_install.py), [verification](test-plan.md#risk-based-scenarios).
+- Scope: Add a shell-level offline composed fixture for bootstrap.sh and new_profile.sh using a fake runtime/profile/cron CLI, isolated HERMES_HOME, and --no-vendor.
+- Exclusions: real profiles, secrets, live jobs, paid calls, real remotes, upstream Hermes, and unrelated workers' files.
+- Acceptance: Two runs preserve custom files and do not duplicate jobs. Verify job workdir, delivery, schedule, --no-cron, and both default jobs under --no-cleanup-cron. Run the installer suite and make test.
+- Dependencies: none. Ownership: unclaimed.
+
+
+### SETUP-4
+
+- [x] Prove canonical wrapper relocation and discovery inputs in composed setup fixtures. Goal: SETUP.
+- Payoff: extend SETUP-1 job composition to canonical shared-skill inputs without claiming live discovery.
+- Sources: [requirement](PRD.md#requirements-and-acceptance), [installer tests](extras/install/test_install.py), [verification](test-plan.md#risk-based-scenarios).
+- Scope: Compose real installer helpers with an offline fake CLI. Assert external_dirs and generated wrapper targets after checkout relocation, preserving custom wrappers.
+- Exclusions: profile writes outside fixtures, OMH installation, live discovery, paid calls, scheduler changes, commits, and pushes.
+- Acceptance: A relocated fixture resolves canonical scripts and discovery configuration. A second run is byte-identical. Run the composed fixture and make test. Live discovery remains separately unverified.
+- Dependencies: none. Ownership: unclaimed.
+
+
+### SETUP-OPTIONS
+
+- [x] Review and close the existing option/adoption fixture slice. Goal: SETUP.
+- Scope: `extras/install/test_provisioning.py` covers customized profile adoption,
+  SOUL/menu/prune values, preserved fixture credentials/jobs and exact default job arguments.
+- Acceptance: Run that suite and the offline gate on the candidate. Fixture proof
+  does not establish live scheduler delivery. Independent candidate review and
+  the exact staged-source offline gate passed.
+- Sources: [test plan](test-plan.md#linux-portability-and-pipeline-continuation).
+- Evidence: `python extras/install/test_provisioning.py -v` (11 tests) and
+  `make test` (27 offline suites) passed on the curated snapshot.
+
+
 ### SETUP-2
 
 - [x] Make project job wiring and cron instructions agree. Goal: SETUP.
@@ -163,7 +195,7 @@ None. No new owner-only question is required for this evidence-backed bootstrap.
 - Evidence: `PYTHONDONTWRITEBYTECODE=1 TMPDIR=/home/xel/.hermes/cache/scratch python3 extras/install/test_new_profile.py -v` passed all three tests after two expected missing-monitor failures.
 - Acceptance: Hourly/15m wiring, exact repo-docs ID linkage, workdir, local delivery, continuity, no-cron, and two-run job idempotency passed. The full offline `make test` run passed.
 - Sources: [script](extras/install/new_profile.sh), [fixture](extras/install/test_new_profile.py), [cron notes](extras/cron/README.md).
-- Limits: Fake CLI adoption does not prove fresh profile creation, OMH, live discovery, or delivery. SETUP-1 and SETUP-4 remain queued.
+- Limits: Fake CLI adoption does not prove fresh profile creation, OMH, live discovery, or delivery. SETUP-1 and SETUP-4 were subsequently verified with isolated composed fixtures.
 
 ### SETUP-3
 
