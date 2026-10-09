@@ -45,7 +45,10 @@ elif a[:2] == ['config', 'set']:
     parts = a[2].split('.')
     for part in parts[:-1]:
         node = node.setdefault(part, {})
-    node[parts[-1]] = a[3]
+    try:
+        node[parts[-1]] = json.loads(a[3])
+    except json.JSONDecodeError:
+        node[parts[-1]] = a[3]
     with cfg.open('w') as stream:
         yaml.dump(content, stream)
 elif a == ['cron', 'list']:
@@ -77,6 +80,11 @@ class ProvisioningTests(unittest.TestCase):
         self.repo.mkdir()
         for name in ('bootstrap.sh', 'install.sh'):
             shutil.copy2(ROOT / name, self.repo / name)
+        # Composition fixtures are deliberately non-Git and mutate local code for
+        # negative controls. Explicitly keep that code; sync has real Git tests.
+        installer = self.repo / 'install.sh'
+        installer.write_text(installer.read_text().replace(
+            'set -euo pipefail', 'set -euo pipefail\nset -- --skip-sync "$@"', 1))
         for name in ('install', 'cron', 'soul', 'monitors', 'maintenance'):
             shutil.copytree(ROOT / 'extras' / name, self.repo / 'extras' / name,
                             ignore=shutil.ignore_patterns('__pycache__'))
@@ -92,6 +100,16 @@ class ProvisioningTests(unittest.TestCase):
         agent.mkdir()
         (agent / 'hermes_bootstrap.py').write_text(
             f'import sys; sys.path.insert(0, {self.dependencies!r})\n')
+        (agent / 'pm').mkdir()
+        (agent / 'pm/__init__.py').write_text('')
+        (agent / 'pm/environments.py').write_text(
+            f'import sys\ndef activate_dependencies(root): sys.path.insert(0, {self.dependencies!r})\n')
+        (agent / 'hermes_cli').mkdir()
+        (agent / 'hermes_cli/__init__.py').write_text('')
+        (agent / 'hermes_cli/profiles.py').write_text(
+            'import os\nfrom pathlib import Path\n'
+            'def _get_default_hermes_home(): return Path(os.environ["HERMES_HOME"])\n'
+            'def list_profile_names(): return ["default"]\n')
         runtime = [sys.executable, '-I', '-c',
                    f'import sys; sys.path.insert(0, {str(agent)!r}); import hermes_bootstrap']
         binary = self.root / 'bin'

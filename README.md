@@ -88,9 +88,31 @@ git clone https://github.com/TrebuchetDynamics/hermes-shared-skills ~/.hermes/sh
   - creates its `repo-docs-on-change` and `autogoal` cron jobs from `extras/cron/`.
 
   Add `--autogoal 15m` for busy profiles, or `--no-cron` to skip the jobs.
-- **`install.sh --profiles a,b`** re-wires existing profiles and is idempotent. Options: `--disable-fleet`,
-  `--telegram-menu`, `--soul`, `--allow-all`, `--prune`, `--dry-run`.
-- Updates: pull this repository through the scoped git-pull-merge workflow. Every profile resolves
+- **`install.sh`** fetches the checkout's configured branch upstream, backs up tracked state,
+  discards local tracked/index edits and local-only commits, then re-wires **all native live Hermes
+  profiles, including default**. It uses Hermes' root/profile discovery even from a named-profile
+  session; missing config files are reported and skipped. Run only on a quiescent checkout.
+  `--profiles a,b` narrows setup only; it still syncs the shared checkout. `--skip-sync` (alias
+  `--keep-local`) installs the current local files without fetching or resetting. `--dry-run`
+  previews local wiring and the sync plan without fetching, backups, Git writes or profile writes.
+  Optional behavior stays opt-in: `--disable-fleet`, `--telegram-menu`, `--soul`, `--allow-all`,
+  `--prune`, `--impeccable`, `--replace-root OLD_PATH`. Bare installation creates wrappers, not
+  cron jobs, and does not change approval policy, identities or disabled skills.
+
+  **Deletion and recovery boundary:** sync uses validated `git fetch` plus `git reset --hard`,
+  not a merge/rebase or `git clean`. Unrelated untracked and ignored files (vendor trees, env files,
+  generated output) survive. If an upstream tracked path would overwrite them, setup stops instead.
+  Failed fetches leave HEAD/index/working files untouched. Before a changed reset, private mode-0700
+  backups under `~/.hermes/private-records/shared-skills/install-backups/sync-*/` retain binary
+  staged/working patches, the exact index, a tracked-files tar archive and `state.json`. The old HEAD
+  remains reachable through the recorded `refs/install-backups/` ref, including local-only commits.
+  The backup is outside this public checkout. To recover, stop writers, return to the recorded old
+  HEAD, apply `index.patch` with `git apply --index`, then `worktree.patch` with `git apply` (skip
+  empty patches). The archive/index are the exact-file fallback; inspect them before restoring.
+  Backups and safety refs are retained until you explicitly remove them. Submodule working trees
+  are not recursively reset. After sync, setup re-execs the fetched installer; it never mixes the
+  old shell option handling with the new helper.
+- Every profile resolves
   the same canonical files on disk; fresh-session discovery verifies the new catalog. Skill indexes
   and already-loaded bodies can remain cached in existing sessions. Do not rewrite their history or
   restart healthy workers merely to propagate wording.

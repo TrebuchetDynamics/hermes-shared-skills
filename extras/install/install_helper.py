@@ -3,8 +3,10 @@
 
 Args come from INSTALL_ARGS (JSON): repo, profiles, disable_fleet, telegram_menu, soul, allow_all, prune, dry_run.
 """
+import copy
 import json
 import os
+import subprocess
 from pathlib import Path
 
 from ruamel.yaml import YAML
@@ -12,6 +14,11 @@ from ruamel.yaml import YAML
 args = json.loads(os.environ['INSTALL_ARGS'])
 repo = Path(args['repo']).resolve()
 home = Path(os.environ.get('HERMES_HOME') or Path.home() / '.hermes')
+if args['profiles'] is None or args.get('native_profiles'):
+    from hermes_cli.profiles import _get_default_hermes_home, list_profile_names
+    home = _get_default_hermes_home()
+    if args['profiles'] is None:
+        args['profiles'] = list_profile_names()
 dry = args.get('dry_run', False)
 FLEET = ['fleet-governor', 'fleet-blockers', 'fleet-status']
 MENU = ['repo_docs', 'autogoal', 'grill_me', 'lgtm', 'git_commit_push', 'git_pull_merge', 'impeccable']
@@ -56,6 +63,7 @@ for name in args['profiles']:
         print(f'[{name}] skip: {cfg_path} not found')
         continue
     data = yaml.load(cfg_path.read_text()) or {}
+    original = copy.deepcopy(data)
     changes = []
 
     skills = data.setdefault('skills', {})
@@ -164,6 +172,19 @@ for name in args['profiles']:
 
     cfg_changes = [c for c in changes if not c.startswith(('write ', 'SOUL'))]
     if cfg_changes and not dry:
-        with cfg_path.open('w') as fh:
-            yaml.dump(data, fh)
+        # Native config writes preserve unrelated settings and validate supported
+        # keys. Scope by exact home rather than the caller's sticky profile.
+        env = dict(os.environ, HERMES_HOME=str(ph.resolve()))
+        env.pop('HERMES_PROFILE', None)
+        pending = [(original, data, '')]
+        while pending:
+            old, new, prefix = pending.pop()
+            for key, value in new.items():
+                dotted = prefix + str(key)
+                previous = old.get(key) if isinstance(old, dict) else None
+                if isinstance(value, dict):
+                    pending.append((previous or {}, value, dotted + '.'))
+                elif value != previous:
+                    subprocess.run(['hermes', 'config', 'set', dotted, json.dumps(value)],
+                                   env=env, check=True)
     print(f'[{name}] ' + ('; '.join(changes) if changes else 'already up to date') + (' (dry run)' if dry and changes else ''))
