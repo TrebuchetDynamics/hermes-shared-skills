@@ -1,0 +1,6 @@
+name: hermes-toolset
+version: 0.1.0
+description: Run the repository's bundled skills as commands in Hermes CLI and Telegram.
+author: TrebuchetDynamics
+homepage: https://github.com/TrebuchetDynamics/hermes-toolset
+kind: standalone
