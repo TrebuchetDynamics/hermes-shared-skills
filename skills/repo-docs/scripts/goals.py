@@ -700,7 +700,7 @@ def execute(a):
         if a.ran_at:
             entry['ran_at'] = a.ran_at
         goal['evidence'] = [x for x in goal.get('evidence', []) if (x.get('kind'), x.get('ref')) != (a.kind, a.ref)] + [entry]
-        if a.kind == 'executed' and a.result == 'pass' and goal.get('status') in ('unverified', 'partial') \
+        if a.kind == 'executed' and a.result == 'pass' and goal.get('status') in ('unmet', 'unverified', 'partial') \
                 and all(t.get('status') == 'done' for t in data['tasks'] if t.get('goal') == a.goal):
             goal['status'] = 'met'
         if a.kind == 'executed' and a.result == 'fail' and goal.get('status') == 'met':

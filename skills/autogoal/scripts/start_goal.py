@@ -13,6 +13,7 @@ import uuid
 from urllib.parse import quote
 from pathlib import Path
 import subprocess
+import sys
 from datetime import datetime, timezone
 
 BUDGET = 50
@@ -182,8 +183,14 @@ def build_task_body(contract, goal_max_turns=BUDGET, *, ledger_mode='worker',
         validate_publication_authority(raw, raw['workspace'], raw['profile'], raw['goal_task'], contract)
         if ledger_mode != 'proposal' or integration_owner != raw['owner']:
             raise ValueError('scoped publication requires coherent proposal/integration-owner role')
+    goals_command = shlex.join([sys.executable, str(
+        Path(__file__).resolve().parents[2] / 'repo-docs/scripts/goals.py')])
+    cycle_path = Path(__file__).resolve().parents[2] / 'shared/ENGINEERING-CYCLE.md'
     body = (REVIEW_DOD + '\n\n' + contract + '\n\nExecution: This is the selected autogoal slice, not a picker. '
             'Implement and verify this contract only. Do not discover or enqueue another task. '
+            f'Read the bundled engineering cycle at `{cycle_path}` for verified skill routing, '
+            'missing-support fallbacks and ledger ownership; load only the skills relevant to this slice. '
+            'Implement and update scoped documentation, then return exact checks, source evidence and remaining gaps. '
             'Own debugging, fixes, focused tests and review handoff on this card; no intermediate cards. '
             'Fix and rerun in-scope failures until acceptance or 5 consecutive attempts without new evidence, '
             'within the runtime budget and existing scope/ownership limits. '
@@ -205,12 +212,16 @@ def build_task_body(contract, goal_max_turns=BUDGET, *, ledger_mode='worker',
             'Run long commands (e2e, Playwright, full suites, builds) under `timeout` (for example `timeout 40m`) '
             'so a hang fails fast and is reported instead of crashing the worker. '
             'Keep scratch under the repo\'s ignored folders or ~/.hermes/cache/scratch/<card-id>/ (never new ~/.cache folders) and delete build outputs you created before finishing. '
-            'Keep the profile-local autogoal journal updated with evidence and open questions. When the '
+            'Keep the profile-local autogoal journal updated with evidence and open questions. '
+            'Ledger closure precondition: verify executed acceptance checks and required review acceptance '
+            'at the tested source before marking a canonical task done. Pending review leaves that task '
+            'in_progress and dependent tasks ineligible; finish this worker at review handoff and let the '
+            'authorized owner reconcile closure later. When the '
             'contract names a goals.json task, finish with the repo-docs helper (never hand-edit the JSON): '
-            '`python ~/.hermes/shared-skills/repo-docs/scripts/goals.py task <repo> <TASK> done`, then '
-            '`goals.py evidence <repo> <GOAL> --kind executed --ref "<exact command>" --result pass|fail` '
+            f'`{goals_command} task <repo> <TASK> done`, then '
+            f'`{goals_command} evidence <repo> <GOAL> --kind executed --ref "<exact command>" --result pass|fail` '
             'for each check you actually ran (a goal is met only with an executed pass), then '
-            '`goals.py render <repo>`. In repos without goals.json, tick the TODO.md task and update its '
+            f'`{goals_command} render <repo>`. In repos without goals.json, tick the TODO.md task and update its '
             'Goal coverage row with an anchored patch. Use native '
             'kanban lifecycle tools to complete or request review. Ask, don\'t block: never block this '
             'card or pause the goal because owner input is needed. Apply the recommended default for '
@@ -255,7 +266,9 @@ def build_task_body(contract, goal_max_turns=BUDGET, *, ledger_mode='worker',
                 'goal evidence in either the canonical checkout or worker copy. Do not run goals.py task/evidence/render '
                 'to claim closure. Submit the exact task/goal IDs, source hashes, attributed changes and acceptance/check '
                 'receipts to integration owner ' + integration_owner + ' through existing native task context/comments; '
-                'only that owner applies canonical ledger transitions. Use native ' + body[end:])
+                'only that owner applies canonical ledger transitions after required review acceptance, '
+                'reconciles scoped docs and task bodies, validates/renders the ledger and selects the next '
+                'authorized dependency-ready task. Use native ' + body[end:])
     if publication_authority is not None:
         body = body.replace('Workers perform no other commit, and no push, merge, deploy, publish, ',
                             'Workers perform no other commit, and no merge, deploy, non-task publication, ', 1)

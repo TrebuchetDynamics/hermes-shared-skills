@@ -70,10 +70,10 @@ Git writes. Repo-wide authorization does not override a live writer/lease, unfin
 work, unapproved product scope, secrets, or missing verification.
 
 Card branch helper (temporary index, so HEAD, the real index, and other agents' dirty work
-are untouched):
+are untouched). Resolve `<skills-root>` as the parent of this loaded skill directory:
 
 ```bash
-~/.hermes/shared-skills/autogoal/scripts/agent_commit.sh <repo> <profile> <card-id> "<message>" <files>...
+"<skills-root>/autogoal/scripts/agent_commit.sh" <repo> <profile> <card-id> "<message>" <files>...
 ```
 
 Report the branch and sha it prints. Never point it at main/master or the checked-out branch.

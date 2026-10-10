@@ -751,17 +751,13 @@ class BudgetTests(unittest.TestCase):
                 self.assertEqual(fixture.calls, [])
 
     def test_default_offline_inventory_discovers_this_hermetic_suite(self):
-        import ast
-        root = HERE.parents[1]
+        import importlib.util
+        root = HERE.parents[2]
         path = root / 'scripts/check.py'
-        tree = ast.parse(path.read_text())
-        names = {'first_party_files', 'discover_tests', 'MODEL_TESTS', 'NATIVE_TESTS'}
-        nodes: list[ast.stmt] = [node for node in tree.body if
-                 isinstance(node, ast.FunctionDef) and node.name in names or
-                 isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id in names for target in node.targets)]
-        namespace: dict[str, Any] = {'Path': Path}
-        exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), 'exec'), namespace)
-        inventory = namespace['discover_tests'](root)
+        spec = importlib.util.spec_from_file_location('offline_check', path)
+        checker = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(checker)
+        inventory = checker.discover_tests(root)
         self.assertIn(Path(__file__).resolve(), inventory)
         self.assertNotIn(HERE / 'test_native_lifecycle_controls.py', inventory)
         self.assertNotIn(HERE / 'test_native_containment_linux.py', inventory)

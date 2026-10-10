@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import types
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -24,6 +25,12 @@ class Context:
     def register_command(self, name, handler, description="", args_hint=""):
         self.commands[name] = handler
 
+    def register_cli_command(self, *args, **kwargs):
+        pass
+
+    def get_config(self, key, default=None):
+        return default
+
     def inject_message(self, content, **kwargs):
         self.messages.append((content, kwargs))
         return self.accept
@@ -34,6 +41,7 @@ class PluginTests(unittest.TestCase):
         self.assertTrue((ROOT / "__init__.py").is_file(), "Missing plugin entry point")
         spec = importlib.util.spec_from_file_location("toolset_under_test", ROOT / "__init__.py")
         self.plugin = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = self.plugin
         spec.loader.exec_module(self.plugin)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -47,7 +55,8 @@ class PluginTests(unittest.TestCase):
             "hermes_cli.commands": types.SimpleNamespace(
                 resolve_command=lambda name: object() if name == "help" else None),
             "hermes_cli.plugins": types.SimpleNamespace(
-                get_plugin_commands=lambda: self.existing),
+                get_plugin_commands=lambda: self.existing,
+                get_plugin_manager=lambda: types.SimpleNamespace(list_plugin_skill_metadata=lambda: [])),
         }
         mock_modules = patch.dict("sys.modules", modules)
         mock_modules.start()
@@ -65,11 +74,11 @@ class PluginTests(unittest.TestCase):
         self.skill("alpha")
         (self.root / "not-a-skill").mkdir()
         self.plugin.register(self.ctx)
-        self.assertEqual(set(self.ctx.commands), {"alpha"})
+        self.assertEqual(set(self.ctx.commands), {"alpha", "toolset"})
         self.skill("beta")
         next_ctx = Context()
         self.plugin.register(next_ctx)
-        self.assertEqual(set(next_ctx.commands), {"alpha", "beta"})
+        self.assertEqual(set(next_ctx.commands), {"alpha", "beta", "toolset"})
 
     def test_each_handler_loads_its_own_namespaced_skill_and_preserves_arguments(self):
         alpha = self.skill("alpha")
@@ -121,7 +130,7 @@ class PluginTests(unittest.TestCase):
         self.existing["alpha"] = {"plugin": "other"}
         with self.assertLogs(level="WARNING"):
             self.plugin.register(self.ctx)
-        self.assertEqual(self.ctx.commands, {})
+        self.assertEqual(set(self.ctx.commands), {"toolset"})
         self.assertEqual(set(self.ctx.skills), {"help", "alpha"})
 
     def test_invalid_names_and_telegram_alias_collisions_fail_before_registration(self):

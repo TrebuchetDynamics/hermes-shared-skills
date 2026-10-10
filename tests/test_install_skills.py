@@ -85,6 +85,29 @@ class InstallSkillsTests(unittest.TestCase):
         self.assertEqual(list(outside.iterdir()), [])
         self.assertTrue((self.home / 'profiles/coder/skills/example/SKILL.md').exists())
 
+    def test_shared_contracts_are_copied_and_existing_edits_preserved(self):
+        shared = self.repo / 'skills/shared'
+        shared.mkdir()
+        for name in ('COMMON-CONTRACT.md', 'PLAN-HANDOFF.md', 'WORKTREE-ISOLATION.md'):
+            (shared / name).write_text('Bundled contract\n')
+        self.assertEqual(self.run_installer('--dry-run').returncode, 0)
+        self.assertFalse((self.home / 'skills').exists())
+        result = self.run_installer()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for home in (self.home, self.home / 'profiles/coder'):
+            self.assertEqual((home / 'skills/shared/COMMON-CONTRACT.md').read_text(),
+                             'Bundled contract\n')
+        target = self.home / 'skills/shared/COMMON-CONTRACT.md'
+        target.write_text('local contract')
+        self.assertEqual(self.run_installer().returncode, 0)
+        self.assertEqual(target.read_text(), 'local contract')
+
+    def test_incomplete_shared_support_prevents_partial_install(self):
+        (self.repo / 'skills/shared').mkdir()
+        result = self.run_installer()
+        self.assertEqual(result.returncode, 1)
+        self.assertFalse((self.home / 'skills').exists())
+
     def test_invalid_source_prevents_partial_install(self):
         invalid = self.repo / 'skills/broken'
         invalid.mkdir()

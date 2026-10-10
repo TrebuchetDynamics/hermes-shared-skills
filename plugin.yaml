@@ -1,6 +1,14 @@
 name: hermes-toolset
-version: 0.1.0
+version: 0.2.0
 description: Run the repository's bundled skills as commands in Hermes CLI and Telegram.
 author: TrebuchetDynamics
 homepage: https://github.com/TrebuchetDynamics/hermes-toolset
 kind: standalone
+# Bot Forge imports PyYAML but currently omits it from its own manifest.
+python_dependencies:
+  - PyYAML>=6,<7
+requires_plugins:
+  - omh
+  - bot-forge
+  - ponytail
+  - hermes-speech

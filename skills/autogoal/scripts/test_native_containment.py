@@ -280,8 +280,8 @@ class SyntheticLaunchTests(unittest.TestCase):
             stack.enter_context(patch.object(Path, 'read_text', read))
             stack.enter_context(patch.object(Path, 'exists', lambda p:
                 not (stopped and absent) if str(p).startswith('/sys/fs/cgroup/synthetic/') else original_exists(p)))
-            receipt_path = ((Path.home() / '.hermes/cache/scratch/executable-safeguards/controller-bridge/containment')
-                            / (evidence_name + '.json')) if evidence_name else root / 'receipt.json'
+            # Synthetic evidence belongs to this fixture, inside the patched scratch root.
+            receipt_path = root / ((evidence_name or 'receipt') + '.json')
             receipt = module.launch(['/usr/bin/true'], job, receipt_path=receipt_path, cancel_event=event, **options)
             self.assertEqual(json.loads(receipt_path.read_text()), receipt)
             released = bool(list(job.glob('.release-*')))

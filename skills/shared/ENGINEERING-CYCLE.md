@@ -1,0 +1,91 @@
+# Repository engineering cycle
+
+Use the existing repo-docs backlog and autogoal executor. This is workflow guidance,
+not a scheduler, new database or `/cycle` command. Documentation work alone never
+launches autogoal. Only an explicit whole-spec implementation request authorizes
+continuation through that accepted scope; default autogoal still hands off one slice.
+Design approval alone does not authorize execution. Preserve no-commit, no-push,
+no-deploy and other user boundaries throughout; skill defaults cannot expand them.
+
+## Load the skill needed at the current step
+
+Resolve bundled skills through `hermes-toolset:repo-docs` and
+`hermes-toolset:autogoal`, or their actual loaded SKILL.md paths. For addyosmani
+skills, inspect the active profile's skill catalog and `skills/.hub/lock.json` to
+confirm the installed file and source `addyosmani/agent-skills`. Load by the exact
+catalog identity when unambiguous; otherwise read the verified SKILL.md path.
+Do not invent an `addyosmani:` namespace or assume the default profile's home.
+Record selected identity/path and any unavailable dependency in the handoff.
+
+| Need | Targeted addyosmani skill | Apply to the existing owner |
+| --- | --- | --- |
+| An unresolved requirement or decision | `interview-me` | Ask only the missing question; accepted answers amend the existing spec. |
+| Missing specification | `spec-driven-development` | Reuse the accepted spec/PRD; do not restart accepted design. |
+| Changed behavior or architectural decision | `documentation-and-adrs` | Amend affected docs/ADR with observed facts; repo-docs owns backlog reconciliation. |
+| Accepted work needs bounded tasks | `planning-and-task-breakdown` | Add dependencies, scope and checks to canonical `goals.json` and root `TODO.md`. |
+| Implement an eligible slice | `incremental-implementation` | Keep one observable result, owned files and task ID. |
+| Changed logic or a bug | `test-driven-development` | Run the repository's discriminating red/green checks. |
+| Review an implemented slice | `code-review-and-quality` | Use its review criteria within the required native review lane. |
+
+Load only relevant skills, not this whole table. Adapt upstream examples such as
+`tasks/todo.md`, new spec files and automatic commits to existing owners and
+permissions; never create a competing backlog or duplicate accepted tasks.
+
+TDD identity collision: addyosmani's copy may be at
+`<profile-home>/skills/test-driven-development/SKILL.md`, while Hermes's bundled
+copy resolves as `software-development/test-driven-development`. Verify the former
+against the install lock and read that explicit path when bare
+`test-driven-development` is ambiguous. If unavailable, disclose the fallback and
+load the verified bundled identity; do not claim addyosmani's version was loaded.
+
+If `debugging-and-error-recovery` is scanner-blocked or unavailable, report that
+fact and use an available, verified `systematic-debugging` skill for diagnosis.
+If that fallback is also absent, use the repository's documented reproduction and
+debugging procedure and report the limitation. Do not install, bypass the scanner,
+or waive the same acceptance checks to obtain a supporting skill. Missing required
+execution/review capability remains an explicit unresolved gate.
+
+Check referenced support files before claiming to have read them. Per-skill installs
+may omit upstream root `references/definition-of-done.md`,
+`references/security-checklist.md` or `references/performance-checklist.md` even
+when SKILL.md loads. Disclose missing support; use the accepted task's repository
+criteria and available project checklists, retaining required security/performance
+coverage. Mark unavailable required checks NOT_CHECKED, never pretend they passed.
+
+## One canonical backlog, one executor, one closure owner
+
+1. Repo-docs reconciles accepted requirements into existing goal/task IDs and full
+   TODO bodies. Use [plan handoff](PLAN-HANDOFF.md) and its consumer backlog-check;
+   drafts, missing acceptance and unresolved dependencies do not become ready work.
+   A usable backlog skips another bootstrap or broad audit.
+2. For explicitly authorized whole-spec execution, the integration owner reads
+   `goals.py next <repo> --json`, restricts selection to accepted IDs, checks live
+   ownership and fresh sources, and hands off a dependency-ready slice through
+   existing start_goal admission. Use `--ledger-mode proposal --integration-owner
+   <owner>` with the existing base, source snapshot, task ID and complete contract.
+   Mark in_progress only after actual handoff. No new scheduler or substitute run.
+3. The worker loads the relevant verified skills, implements, runs checks and
+   updates scoped documentation. It returns task/goal IDs, changed paths, source
+   fingerprints, exact checks/results, documentation changes and remaining gaps.
+   Proposal workers never mutate canonical goals.json, goal coverage or closure;
+   they send receipts to the named integration owner and request required review.
+4. The owner verifies implementation evidence and required review acceptance at
+   the tested source before closure. Pending/rejected review keeps the task
+   in_progress and dependent tasks ineligible; do not encode review as an executed
+   test pass. Native review handoff can finish the worker card while canonical
+   task closure remains pending. Reconcile that same card, do not redispatch it.
+   Check exact integration evidence when the accepted task requires integration.
+5. After those gates, the owner uses the bundled `goals.py task <repo> <TASK> done`
+   and `goals.py evidence <repo> <GOAL> --kind executed --ref "<actual command>"
+   --result pass|fail` for actual check receipts. The helper requires all goal tasks
+   done and an executed pass to promote an unmet goal; it does not independently
+   verify review, source freshness or truth of caller-supplied evidence.
+   Run narrow repo-docs Maintain to reconcile affected docs and task bodies, then
+   `goals.py validate <repo>` and `goals.py render <repo>`; use canonical authority
+   and revision guards and preserve concurrent edits. Rendering covers only the
+   goal table, not implementation docs or TODO task-body status.
+6. Re-read `next` and ownership after reconciliation. Continue only inside the
+   explicit whole-spec mandate; otherwise report the next eligible slice and stop.
+   Exhausted budget, unresolved review/capability or ownership is recorded honestly;
+   it never grants broader scope. Report implementation, checks, review, integration
+   and delivery separately. Offline fixtures are not native/model execution proof.

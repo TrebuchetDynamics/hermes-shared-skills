@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class ArchivePolicyTests(unittest.TestCase):
-    def test_skill_and_cron_share_the_archive_contract(self):
+    def test_shipped_skill_uses_the_archive_contract(self):
         policy = ROOT / 'repo-docs/references/todo-archive.md'
         self.assertTrue(policy.is_file(), 'Missing live-backlog/archive contract')
         text = policy.read_text()
@@ -19,10 +19,9 @@ class ArchivePolicyTests(unittest.TestCase):
                             'dated pass-notes', 'multiplicity'):
             self.assertIn(requirement, text)
         skill = (ROOT / 'repo-docs/SKILL.md').read_text()
-        cron = (ROOT / 'extras/cron/repo-docs.prompt.md').read_text()
         self.assertIn('references/todo-archive.md', skill)
-        self.assertIn('archive', cron)
-        self.assertIn('dated pass-notes', cron)
+        self.assertIn('archive', skill)
+        self.assertIn('dated pass-notes', skill)
 
 
     def test_goal_helpers_preserve_archive_and_ignore_historical_queue(self):

@@ -41,7 +41,10 @@ if not skills:
     fail(f'No skill folders found in {source}')
 ignore = shutil.ignore_patterns('__pycache__', '*.pyc', '*.pyo', '.pytest_cache', '.git', '.DS_Store')
 for skill in skills:
-    if not re.fullmatch(r'[a-z0-9][a-z0-9_-]*', skill.name) or not (skill / 'SKILL.md').is_file():
+    shared_support = skill.name == 'shared' and all(
+        (skill / name).is_file() for name in
+        ('COMMON-CONTRACT.md', 'PLAN-HANDOFF.md', 'WORKTREE-ISOLATION.md'))
+    if not re.fullmatch(r'[a-z0-9][a-z0-9_-]*', skill.name) or not (shared_support or (skill / 'SKILL.md').is_file()):
         fail(f'Invalid skill folder or missing SKILL.md: {skill}')
     if skill.is_symlink() or any(p.is_symlink() for p in skill.rglob('*')):
         fail(f'Symlinks are not supported inside source skills: {skill}')

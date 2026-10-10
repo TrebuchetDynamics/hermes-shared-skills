@@ -30,8 +30,8 @@ class PickerPolicyTests(unittest.TestCase):
         core = ROOT.joinpath('SKILL.md').read_text()
         handoff = ROOT.joinpath('references/handoff.md').read_text()
         discovery = ROOT.joinpath('references/discovery.md').read_text()
-        cron = ROOT.parent.joinpath('extras/cron/autogoal.prompt.md').read_text()
-        for text in (core, cron):
+        # This bundle ships no legacy cron prompt; verify its supported picker entry.
+        for text in (core,):
             self.assertIn('Reconcile once', text)
             self.assertIn('discovery only when no usable task remains', text)
             self.assertIn('50 turns by default', text)

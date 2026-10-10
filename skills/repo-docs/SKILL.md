@@ -20,7 +20,9 @@ Findings or rendered coverage alone are insufficient.
 
 Follow [the shared plan contract](../shared/PLAN-HANDOFF.md) for idea-to-execution
 handoffs. Accepted answers update existing owners; proposals stay outside the
-executable backlog. Writing a task does not authorize its execution.
+executable backlog. Writing a task does not authorize its execution. Use [the engineering cycle](../shared/ENGINEERING-CYCLE.md)
+for targeted supporting skills and reconciliation after authorized implementation;
+a documentation-only request never launches autogoal.
 
 ## 1. Choose mode and scope
 
@@ -206,7 +208,7 @@ tracked `.repo-docs-drift-ignore` lines. Unstated speculative goals get a questi
 After saving accepted intent and reconciling full bodies, run the read-only gate:
 
 ```sh
-python repo-docs/scripts/goals.py backlog-check /absolute/consumer --plan docs/spec.md#accepted-heading --tasks TASK1,TASK2
+python3 "<this-skill-directory>/scripts/goals.py" backlog-check /absolute/consumer --plan docs/spec.md#accepted-heading --tasks TASK1,TASK2
 ```
 
 Put `Status: Accepted` on its own line inside the referenced plan heading only

@@ -34,14 +34,14 @@ def _discover_skills():
     return skills
 
 
-def _invoke(ctx, name, path, raw_args):
+def _invoke(ctx, name, path, raw_args, namespace="hermes-toolset"):
     from gateway.session_context import get_session_env
 
     if not path.is_file():
         return f"Skill {name!r} no longer exists. Update the plugin and restart Hermes."
     prompt = (
         f"The user invoked the /{name} skill command. "
-        f'Load skill_view(name="hermes-toolset:{name}") and follow its instructions '
+        f'Load skill_view(name="{namespace}:{name}") and follow its instructions '
         "to perform the requested work in this conversation. "
         "Resolve supporting files relative to that skill's directory.\n\n"
         f"User arguments:\n{raw_args}"
@@ -87,3 +87,5 @@ def register(ctx):
             command, partial(_invoke, ctx, name, path),
             description=f"Run the {name} skill", args_hint="[instructions]",
         )
+    from .bundle import register_bundle
+    register_bundle(ctx, _invoke)

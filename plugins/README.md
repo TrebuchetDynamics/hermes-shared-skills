@@ -13,7 +13,7 @@ per line; blank lines and lines beginning with `#` are ignored:
 
 ```text
 https://hermes-agent.nousresearch.com/docs/plugins/omh all profiles
-https://hermes-agent.nousresearch.com/docs/plugins/bot-forge default profile only
+https://hermes-agent.nousresearch.com/docs/plugins/bot-forge all profiles
 https://github.com/dietrichgebert/ponytail all profiles
 skills https://github.com/addyosmani/agent-skills all profiles
 ```
@@ -36,18 +36,23 @@ checkout is removed afterwards. These entries require Git. Discovery and
 native installs use the default branch; updates during a run can change it.
 Dry runs show the repository/profile plan without cloning or fetching skills.
 
-The listed Graphify repository currently ships a Python CLI rather than a
-Hermes plugin or standard skill bundle. The installer reports it as unsupported
-and exits nonzero after processing the other entries, including in dry-run mode.
-It needs a separate integration; it is not silently treated as installed.
+Graphify uses its official `graphify install --platform hermes --project`
+adapter in a temporary directory. The generated skill and references are copied
+into selected profiles. Its CLI is installed with `uv tool install graphifyy`
+when missing; existing skills are preserved.
 
 Requires Bash, Python 3.9+, and `hermes` on `PATH`. GitHub plugin skips use
 Hermes' recorded source metadata so differing repository and plugin names work.
 Untracked manual installs are left for Hermes to handle without force-overwrite.
 Installation uses the native catalog
 command, preserving Hermes' dependency, security, and activation prompts;
-run interactively to answer them. The script does not automatically enable
-plugins, update existing installs, change memory providers, or restart gateways.
+run interactively to answer them. `--enable` activates plugins; `--yes-deps`
+consents to native plugin dependencies. Skill installation skips the normal
+confirmation prompt but still enforces security scans. `--setup` runs OMH's full
+setup and doctor using `plugins/defaults.json`, preserving the existing memory
+policy and TUI. Before enabling the bundle, it configures gateway injection,
+turns off command and slash-confirmation prompts, and clears global/per-channel
+skill disable lists in each profile. All declared plugin sources target all profiles. The script does not update existing installs or restart gateways.
 Existing plugin directories are reported as skipped, not verified as enabled.
 An install failure is reported, other targets are attempted, and the script
 exits nonzero if any target failed. `--dry-run` never invokes Hermes.

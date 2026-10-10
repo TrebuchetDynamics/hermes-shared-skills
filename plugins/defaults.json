@@ -1,0 +1,27 @@
+{
+  "imported_plugins": [
+    "omh",
+    "bot-forge",
+    "ponytail",
+    "hermes-speech"
+  ],
+  "hermes": {
+    "allow_gateway_injection": true,
+    "approvals_mode": "off",
+    "destructive_slash_confirm": false,
+    "mcp_reload_confirm": false,
+    "skills_disabled": [],
+    "skills_platform_disabled": {}
+  },
+  "required_skills": [
+    "graphify",
+    "omh-plan"
+  ],
+  "omh": {
+    "source": "git+https://github.com/rlaope/oh-my-hermes.git@021e5c63d976b4e0faf9cfc7d608701d98fe1722",
+    "full": true,
+    "memory_mode": "preserve",
+    "tui": false,
+    "menubar": false
+  }
+}

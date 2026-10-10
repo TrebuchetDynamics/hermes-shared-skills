@@ -15,6 +15,11 @@ Reads plugins/PLUGINS.md beside this script. Each non-comment line is:
 Installs missing plugins using Hermes' normal installation/activation prompts.
 Existing installs are skipped, never force-replaced. No gateways are restarted.
 --dry-run          Print commands without invoking Hermes or changing profiles.
+--enable           Enable newly installed and already present plugins.
+--yes-deps         Consent to declared Python dependencies on native installs.
+--setup            Run OMH setup using plugins/defaults.json after installation.
+--bundle-only      Link and enable this bundle in every live profile and apply
+                   its defaults, without installing external sources.
 --hermes-home ROOT Select the default Hermes home containing profiles/.
                    Defaults to HERMES_HOME (or ~/.hermes); a named-profile
                    HERMES_HOME is resolved to its containing root.
@@ -24,6 +29,10 @@ EOF
 die() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 
 dry_run=false
+enable=false
+yes_deps=false
+setup=false
+bundle_only=false
 hermes_root=${HERMES_HOME:-"$HOME/.hermes"}
 if [[ $(basename -- "$(dirname -- "$hermes_root")") == profiles ]]; then
     hermes_root=$(dirname -- "$(dirname -- "$hermes_root")")
@@ -31,6 +40,10 @@ fi
 while (($#)); do
     case $1 in
         --dry-run) dry_run=true; shift ;;
+        --enable) enable=true; shift ;;
+        --yes-deps) yes_deps=true; shift ;;
+        --setup) setup=true; shift ;;
+        --bundle-only) bundle_only=true; setup=true; shift ;;
         --hermes-home)
             [[ $# -ge 2 && -n $2 ]] || die '--hermes-home requires a directory'
             hermes_root=$2; shift 2 ;;
@@ -111,20 +124,87 @@ failed=0
 installed=0
 skipped=0
 planned=0
+apply_bundle_defaults() {
+    local profile=$1 key value errors=0
+    while IFS=$'\t' read -r key value; do
+        if $dry_run; then
+            printf 'Plan: config %s=%s (%s)\n' "$key" "$value" "$profile"
+            [[ $key != approvals.mode ]] || printf 'Plan: command approvals=%s (%s)\n' "$value" "$profile"
+        elif ! HERMES_HOME=$hermes_root hermes -p "$profile" config set "$key" "$value"; then
+            errors=$((errors + 1))
+        fi
+    done <<< "$bundle_defaults"
+    ((errors == 0))
+}
+bundle_defaults=''
+if $setup; then
+    bundle_defaults=$(python3 - "$script_dir/plugins/defaults.json" <<'PYDEFAULTS'
+import json, sys
+cfg = json.load(open(sys.argv[1]))['hermes']
+assert cfg['approvals_mode'] in ('off', 'manual', 'smart'), 'Invalid command approval default'
+for key in ('allow_gateway_injection', 'destructive_slash_confirm', 'mcp_reload_confirm'):
+    assert type(cfg[key]) is bool, 'Invalid boolean default: ' + key
+assert isinstance(cfg['skills_disabled'], list) and isinstance(cfg['skills_platform_disabled'], dict)
+for setting, key in (
+    ('plugins.entries.hermes-toolset.allow_gateway_injection', 'allow_gateway_injection'),
+    ('approvals.mode', 'approvals_mode'),
+    ('approvals.destructive_slash_confirm', 'destructive_slash_confirm'),
+    ('approvals.mcp_reload_confirm', 'mcp_reload_confirm'),
+    ('skills.disabled', 'skills_disabled'),
+    ('skills.platform_disabled', 'skills_platform_disabled')):
+    value = cfg[key]
+    print(setting + '\t' + (value if isinstance(value, str) else json.dumps(value)))
+PYDEFAULTS
+    ) || die 'Invalid bundle defaults'
+fi
 temp_dir=''
 trap '[[ -z $temp_dir ]] || rm -rf -- "$temp_dir"' EXIT
+if $setup; then
+    [[ -f $script_dir/plugin.yaml ]] || die 'Bundle plugin.yaml is missing'
+    for profile in "${profiles[@]}"; do
+        profile_dir=$hermes_root
+        [[ $profile == default ]] || profile_dir=$hermes_root/profiles/$profile
+        target=$profile_dir/plugins/hermes-toolset
+        if [[ -e $target || -L $target ]]; then
+            if [[ ! -f $target/plugin.yaml ]]; then
+                printf 'Error: existing bundle path is not a plugin: %s\n' "$target" >&2
+                failed=$((failed + 1))
+                continue
+            fi
+        elif $dry_run; then
+            printf 'Plan: link hermes-toolset into %s\n' "$profile"
+        else
+            mkdir -p -- "$profile_dir/plugins"
+            ln -s -- "$script_dir" "$target"
+        fi
+        if ! apply_bundle_defaults "$profile"; then
+            failed=$((failed + 1))
+            continue
+        fi
+        if $dry_run; then
+            printf 'Plan: enable hermes-toolset (%s)\n' "$profile"
+        elif ! HERMES_HOME=$hermes_root hermes -p "$profile" plugins enable hermes-toolset; then
+            failed=$((failed + 1))
+        fi
+    done
+fi
 for ((i=0; i<${#plugins[@]}; i++)); do
+    $bundle_only && break
     plugin=${plugins[i]}
     source=${sources[i]}
-    # Graphify v8 ships a Python CLI and generated host-specific skills, not a
-    # Hermes plugin manifest or a standard skills/*/SKILL.md bundle.
-    if [[ ${source,,} == https://github.com/graphify-labs/graphify ]]; then
-        printf 'Unsupported: Graphify is a CLI, not a Hermes plugin; it needs a separate Hermes integration: %s\n' "$source" >&2
-        failed=$((failed + 1))
-        continue
-    fi
     targets=(default)
     [[ ${scopes[i]} != 'all profiles' ]] || targets=("${profiles[@]}")
+    if [[ ${source,,} == https://github.com/graphify-labs/graphify ]]; then
+        helper_args=(python3 "$script_dir/install-graphify.py" --hermes-home "$hermes_root")
+        for profile in "${targets[@]}"; do helper_args+=(--profile "$profile"); done
+        $dry_run && helper_args+=(--dry-run)
+        if "${helper_args[@]}"; then
+            $dry_run && planned=$((planned + 1)) || installed=$((installed + 1))
+        else
+            failed=$((failed + 1))
+        fi
+        continue
+    fi
     if [[ ${kinds[i]} == skills ]]; then
         if $dry_run; then
             for profile in "${targets[@]}"; do
@@ -143,6 +223,17 @@ for ((i=0; i<${#plugins[@]}; i++)); do
                 printf 'Failed: no skills/*/SKILL.md found in %s\n' "$source" >&2
                 failed=$((failed + 1))
             fi
+            for profile in "${targets[@]}"; do
+                profile_dir=$hermes_root
+                [[ $profile == default ]] || profile_dir=$hermes_root/profiles/$profile
+                python3 - "$script_dir" "$profile_dir" "$source" "${skill_files[@]}" <<'PY'
+import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from bundle import record_skill_repository
+record_skill_repository(sys.argv[2], sys.argv[3], [Path(p).parent.name for p in sys.argv[4:]])
+PY
+            done
             for skill_file in "${skill_files[@]}"; do
                 skill_name=${skill_file%/SKILL.md}
                 skill_name=${skill_name##*/}
@@ -153,7 +244,7 @@ for ((i=0; i<${#plugins[@]}; i++)); do
                 fi
                 for profile in "${targets[@]}"; do
                     printf 'Installing skill: %s (%s)\n' "$skill_name" "$profile"
-                    if HERMES_HOME=$hermes_root hermes -p "$profile" skills install "${source#https://github.com/}/skills/$skill_name"; then
+                    if HERMES_HOME=$hermes_root hermes -p "$profile" skills install "${source#https://github.com/}/skills/$skill_name" --yes; then
                         installed=$((installed + 1))
                     else
                         printf 'Failed: skill %s (%s)\n' "$skill_name" "$profile" >&2
@@ -166,6 +257,7 @@ for ((i=0; i<${#plugins[@]}; i++)); do
         temp_dir=''
         continue
     fi
+    source_failed=false
     for profile in "${targets[@]}"; do
         profile_dir=$hermes_root
         [[ $profile == default ]] || profile_dir=$hermes_root/profiles/$profile
@@ -199,6 +291,7 @@ PY
             ); then
                 printf 'Failed: %s (%s): could not resolve installed source\n' "$plugin" "$profile" >&2
                 failed=$((failed + 1))
+                source_failed=true
                 continue
             fi
         fi
@@ -206,13 +299,24 @@ PY
             if [[ -f $target/plugin.yaml || -f $target/plugin.json || -f $target/__init__.py ]]; then
                 printf 'Skip: %s (%s) already present\n' "$plugin" "$profile"
                 skipped=$((skipped + 1))
+                if $enable; then
+                    if $dry_run; then
+                        printf 'Plan: enable %s (%s)\n' "${target##*/}" "$profile"
+                    elif ! HERMES_HOME=$hermes_root hermes -p "$profile" plugins enable "${target##*/}"; then
+                        failed=$((failed + 1))
+                        source_failed=true
+                    fi
+                fi
             else
                 printf 'Failed: %s (%s): existing path is not a plugin: %s\n' "$plugin" "$profile" "$target" >&2
                 failed=$((failed + 1))
+                source_failed=true
             fi
             continue
         fi
         command_args=(hermes -p "$profile" plugins install "$source")
+        $enable && command_args+=(--enable)
+        $yes_deps && command_args+=(--yes-deps)
         if $dry_run; then
             printf 'HERMES_HOME=%q ' "$hermes_root"
             printf '%q ' "${command_args[@]}"
@@ -225,9 +329,27 @@ PY
             else
                 printf 'Failed: %s (%s)\n' "$plugin" "$profile" >&2
                 failed=$((failed + 1))
+                source_failed=true
             fi
         fi
     done
+    if $setup && ! $source_failed && [[ $plugin == omh ]]; then
+        helper_args=(python3 "$script_dir/install-omh.py" --hermes-home "$hermes_root")
+        for profile in "${targets[@]}"; do helper_args+=(--profile "$profile"); done
+        $dry_run && helper_args+=(--dry-run)
+        if ! "${helper_args[@]}"; then
+            failed=$((failed + 1))
+        fi
+    fi
 done
+if $setup && ! $bundle_only; then
+    for profile in "${profiles[@]}"; do
+        profile_dir=$hermes_root
+        [[ $profile == default ]] || profile_dir=$hermes_root/profiles/$profile
+        if [[ -f $profile_dir/plugins/hermes-toolset/plugin.yaml ]] || $dry_run; then
+            apply_bundle_defaults "$profile" || failed=$((failed + 1))
+        fi
+    done
+fi
 printf 'Sources: %s install commands succeeded, %s planned, %s skipped, %s failed\n' "$installed" "$planned" "$skipped" "$failed"
 ((failed == 0))

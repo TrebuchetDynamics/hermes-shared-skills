@@ -120,7 +120,7 @@ Load on every run that hands a slice to a worker, before writing the contract. T
 
 ## Vertical-slice contract and delivery standard
 
-Read `python ~/.hermes/shared-skills/repo-docs/scripts/goals.py focus <repo> --json`
+Read `python3 "<skills-root>/repo-docs/scripts/goals.py" focus <repo> --json`
 before selecting. Keep one primary milestone and its observable user outcome in
 `Objective`/`Project payoff`; quote the focus, goal and task IDs in `Source`.
 Choose a bounded end-to-end workflow advancing that milestone, not disconnected
@@ -353,7 +353,7 @@ actual current scope and conditions, never inferred from an earlier restart.
 ## Qualification receipts and required runner verdicts
 
 For a named accepted-plan handoff, run the existing read-only
-`python ~/.hermes/shared-skills/repo-docs/scripts/goals.py backlog-check <repo>
+`python3 "<skills-root>/repo-docs/scripts/goals.py" backlog-check <repo>
 --plan <repo-relative-path#heading> --tasks <existing-task-IDs>` once against the
 canonical ledger; reuse its receipt while the pinned inputs match. Linked-worktree
 calls require `--canonical-repo`. Missing canonical acceptance goes to the ledger's
@@ -582,6 +582,14 @@ after required checks; workers never merge or push. Explicit task restrictions
 (such as no commit) still win over this standing local-commit permission.
 
 ## Execute and verify (goal worker)
+
+Read [the engineering cycle](../../shared/ENGINEERING-CYCLE.md) for installed skill
+identity, targeted addyosmani guidance and transparent missing-support fallbacks.
+Whole-spec workers use proposal ledger mode with a named integration owner. Workers
+update scoped docs and return evidence; the owner waits for required review acceptance
+before task closure, then reconciles docs/TODO, validates/renders and reselects.
+A direct worker ledger role has the same acceptance/review precondition; pending
+review leaves canonical task status in_progress after worker review handoff.
 
 Before solution design or implementation, load `ponytail`; preserve test-driven-development
 and never waive safety, acceptance criteria or required checks for a smaller diff.

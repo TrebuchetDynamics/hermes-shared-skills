@@ -13,7 +13,9 @@ metadata:
 
 ## When to use
 
-Default /autogoal selects one authorized slice for native persistent goal mode (50 turns by default; explicit 100 for one larger outcome), enforced by the goal judge/continuation—not prompt alone. No recurring jobs.
+Default /autogoal hands off one bounded native goal worker (50 turns by default; explicit 100).
+Use [the engineering cycle](../shared/ENGINEERING-CYCLE.md) for skill routing and
+review-gated reconciliation. No recurring jobs.
 
 ## Mode precedence
 
@@ -48,9 +50,9 @@ Only explicit whole-spec requests use `references/whole-spec-execution.md` inste
    bounded prepass, at most once per day, only when no enabled docs job covers it.
    Missing TODO.md or an old mtime alone does not invalidate a usable goals.json task.
    **Selection order:** reconcile live work, then read `goals.py focus <repo> --json`
-   using the repo-docs script path below. Select ONE primary milestone; retain it
+   with `<skills-root>` the loaded skill directory’s parent. Select ONE primary milestone; retain it
    until delivered or explicitly reprioritized. Run
-   `python ~/.hermes/shared-skills/repo-docs/scripts/goals.py next <repo> --json`
+   `python3 "<skills-root>/repo-docs/scripts/goals.py" next <repo> --json`
    and choose a dependency-ready, unclaimed slice advancing that focus, not the
    first unrelated task. If focus is absent, record the accepted milestone and
    missing focus explicitly; do not invent CLI syntax. Without goals.json use

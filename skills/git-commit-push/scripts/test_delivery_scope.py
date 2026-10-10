@@ -11,7 +11,7 @@ import sys
 import unittest
 
 SKILL = Path(__file__).resolve().parents[1]
-ROOT = SKILL.parent
+ROOT = SKILL.parent.parent
 
 
 def normalized(path):

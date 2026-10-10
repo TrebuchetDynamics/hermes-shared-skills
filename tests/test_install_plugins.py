@@ -23,6 +23,11 @@ class InstallPluginsTests(unittest.TestCase):
         self.script = self.repo / 'install-plugins.sh'
         if SCRIPT.exists():
             shutil.copy2(SCRIPT, self.script)
+        for name in ('install-graphify.py', 'install-omh.py', 'bundle.py', 'plugin.yaml'):
+            helper = SCRIPT.parent / name
+            if helper.exists():
+                shutil.copy2(helper, self.repo / name)
+        shutil.copy2(SCRIPT.parent / 'plugins/defaults.json', self.repo / 'plugins/defaults.json')
         self.manifest = self.repo / 'plugins/PLUGINS.md'
         self.manifest.write_text(MANIFEST)
         self.hermes_root = self.root / 'hermes home'
@@ -159,9 +164,9 @@ touch "$dest/skills/build/SKILL.md" "$dest/skills/review/SKILL.md"
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(len(self.calls()), 6)
         self.assertIn(str(self.hermes_root) +
-                      '|-p coder skills install addyosmani/agent-skills/skills/build', self.calls())
+                      '|-p coder skills install addyosmani/agent-skills/skills/build --yes', self.calls())
         self.assertIn(str(self.hermes_root) +
-                      '|-p default skills install addyosmani/agent-skills/skills/review', self.calls())
+                      '|-p default skills install addyosmani/agent-skills/skills/review --yes', self.calls())
 
     def test_github_installed_name_comes_from_provenance(self):
         self.manifest.write_text('https://github.com/owner/repo default profile only\n')
@@ -185,10 +190,96 @@ touch "$dest/skills/build/SKILL.md" "$dest/skills/review/SKILL.md"
 
     def test_graphify_cli_is_not_sent_to_plugin_installer(self):
         self.manifest.write_text('https://github.com/Graphify-Labs/graphify all profiles\n' + MANIFEST)
-        result = self.run_installer()
-        self.assertEqual(result.returncode, 1)
-        self.assertIn('Graphify is a CLI', result.stderr)
+        result = self.run_installer('--dry-run')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('graphify', result.stdout.lower())
+        self.assertEqual(len(self.calls()), 0)
+
+    def test_enable_and_dependency_consent_are_explicit_flags(self):
+        result = self.run_installer('--enable', '--yes-deps')
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(len(self.calls()), 4)
+        self.assertTrue(all(c.endswith('--enable --yes-deps') for c in self.calls()))
+
+    def test_setup_dispatches_omh_with_all_selected_profiles(self):
+        helper = self.repo / 'install-omh.py'
+        helper.write_text('import os,sys\nfrom pathlib import Path\n'
+                          'with Path(os.environ["CALL_LOG"]).open("a") as f: f.write("omh-setup|" + "|".join(sys.argv[1:]) + "\\n")\n')
+        result = self.run_installer('--setup')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('omh-setup|--hermes-home|' + str(self.hermes_root) +
+                      '|--profile|default|--profile|coder|--profile|research', self.calls())
+
+    def test_omh_setup_never_bypasses_a_failed_native_install(self):
+        self.env['FAIL_PROFILE'] = 'coder'
+        (self.repo / 'install-omh.py').write_text('raise RuntimeError("setup must not run")\n')
+        result = self.run_installer('--setup')
+        self.assertEqual(result.returncode, 1)
+        self.assertNotIn('setup must not run', result.stderr)
+
+    def test_setup_applies_gateway_default_only_where_bundle_is_installed(self):
+        self.manifest.write_text('https://hermes-agent.nousresearch.com/docs/plugins/bot-forge default profile only\n')
+        plugin = self.hermes_root / 'profiles/coder/plugins/hermes-toolset'
+        plugin.mkdir(parents=True)
+        (plugin / 'plugin.yaml').write_text('name: hermes-toolset\n')
+        result = self.run_installer('--setup')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(str(self.hermes_root) + '|-p coder config set plugins.entries.hermes-toolset.allow_gateway_injection true', self.calls())
+        self.assertIn(str(self.hermes_root) + '|-p default config set plugins.entries.hermes-toolset.allow_gateway_injection true', self.calls())
+
+    def test_setup_disables_command_prompts_only_for_installed_bundle_profiles(self):
+        self.manifest.write_text('https://hermes-agent.nousresearch.com/docs/plugins/bot-forge default profile only\n')
+        plugin = self.hermes_root / 'profiles/coder/plugins/hermes-toolset'
+        plugin.mkdir(parents=True)
+        (plugin / 'plugin.yaml').write_text('name: hermes-toolset\n')
+        preview = self.run_installer('--setup', '--dry-run')
+        self.assertEqual(preview.returncode, 0, preview.stderr)
+        self.assertIn('command approvals=off (coder)', preview.stdout)
+        self.assertEqual(self.calls(), [])
+        result = self.run_installer('--setup')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(str(self.hermes_root) + '|-p coder config set approvals.mode off', self.calls())
+        self.assertIn(str(self.hermes_root) + '|-p default config set approvals.mode off', self.calls())
+
+    def test_bundle_only_installs_and_enables_every_live_profile_idempotently(self):
+        preview = self.run_installer('--bundle-only', '--dry-run')
+        self.assertEqual(preview.returncode, 0, preview.stderr)
+        self.assertEqual(self.calls(), [])
+        self.assertFalse((self.hermes_root / 'plugins').exists())
+        for _ in range(2):
+            result = self.run_installer('--bundle-only')
+            self.assertEqual(result.returncode, 0, result.stderr)
+        for name, home in [('default', self.hermes_root),
+                           ('coder', self.hermes_root / 'profiles/coder'),
+                           ('research', self.hermes_root / 'profiles/research')]:
+            self.assertEqual((home / 'plugins/hermes-toolset').resolve(), self.repo)
+            self.assertIn(str(self.hermes_root) + f'|-p {name} plugins enable hermes-toolset', self.calls())
+        self.assertFalse((self.hermes_root / 'profiles/deleted/plugins').exists())
+        self.assertFalse((self.hermes_root / 'profiles/ghost/plugins').exists())
+        self.assertFalse(any('plugins install' in c or 'skills install' in c for c in self.calls()))
+
+    def test_bundle_install_preserves_conflicting_existing_path(self):
+        target = self.hermes_root / 'profiles/coder/plugins/hermes-toolset'
+        target.mkdir(parents=True)
+        marker = target / 'user-file'
+        marker.write_text('preserve')
+        result = self.run_installer('--bundle-only')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(marker.read_text(), 'preserve')
+        self.assertFalse(any('|-p coder plugins enable' in c for c in self.calls()))
+
+    def test_permissions_are_applied_before_activation_for_every_profile(self):
+        result = self.run_installer('--bundle-only')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.calls()
+        for profile in ('default', 'coder', 'research'):
+            prefix = str(self.hermes_root) + f'|-p {profile} '
+            enabled = calls.index(prefix + 'plugins enable hermes-toolset')
+            for setting in ('plugins.entries.hermes-toolset.allow_gateway_injection true',
+                            'approvals.mode off', 'approvals.destructive_slash_confirm false',
+                            'approvals.mcp_reload_confirm false', 'skills.disabled []',
+                            'skills.platform_disabled {}'):
+                self.assertLess(calls.index(prefix + 'config set ' + setting), enabled)
 
     def test_skill_dry_run_does_not_clone_or_install(self):
         self.manifest.write_text('skills https://github.com/addyosmani/agent-skills all profiles\n')
