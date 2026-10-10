@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# One-shot setup of hermes-shared-skills on a new machine (or a fresh ~/.hermes).
+# One-shot setup of hermes-toolset on a new machine (or a fresh ~/.hermes).
 #
-#   git clone https://github.com/TrebuchetDynamics/hermes-shared-skills ~/.hermes/shared-skills
+#   git clone https://github.com/TrebuchetDynamics/hermes-toolset ~/.hermes/shared-skills
 #   ~/.hermes/shared-skills/bootstrap.sh [--no-vendor] [--no-cleanup-cron] [--dry-run]
 #
 # 1. Checks that Hermes is installed (prints the official installer otherwise).

@@ -1,6 +1,6 @@
-# hermes-shared-skills
+# hermes-toolset
 
-[![test](https://github.com/TrebuchetDynamics/hermes-shared-skills/actions/workflows/test.yml/badge.svg)](https://github.com/TrebuchetDynamics/hermes-shared-skills/actions/workflows/test.yml)
+[![test](https://github.com/TrebuchetDynamics/hermes-toolset/actions/workflows/test.yml/badge.svg)](https://github.com/TrebuchetDynamics/hermes-toolset/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **Skills and slash commands that let a fleet of [Hermes Agent](https://github.com/NousResearch/hermes-agent)
@@ -68,7 +68,7 @@ and protected-instruction gates. Review the [runbook](runbook.md) before running
 
 ```bash
 curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash        # Hermes itself, if missing
-git clone https://github.com/TrebuchetDynamics/hermes-shared-skills ~/.hermes/shared-skills
+git clone https://github.com/TrebuchetDynamics/hermes-toolset ~/.hermes/shared-skills
 ~/.hermes/shared-skills/bootstrap.sh                                         # wire the default profile
 ~/.hermes/shared-skills/extras/install/new_profile.sh myproject ~/git/myproject --deliver telegram:<chat_id>
 ```
@@ -122,7 +122,7 @@ OMH is an optional third-party integration installed separately through its own 
 Neither `bootstrap.sh` nor `new_profile.sh` installs OMH. Existing provisioned profiles do not prove
 fresh-machine provisioning. Profile wiring, fresh-session discovery, native worker execution, and
 actual message delivery each need their own verification receipt.
-Use `hermes skills tap add TrebuchetDynamics/hermes-shared-skills` to install individual skills
+Use `hermes skills tap add TrebuchetDynamics/hermes-toolset` to install individual skills
 through the Hermes hub instead.
 
 ## Commands

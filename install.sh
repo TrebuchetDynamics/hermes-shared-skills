@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wire hermes-shared-skills into Hermes profiles.
+# Wire hermes-toolset into Hermes profiles.
 #
 #   install.sh [--profiles default,myproject] [--skip-sync] [--dry-run] [options]
 #
