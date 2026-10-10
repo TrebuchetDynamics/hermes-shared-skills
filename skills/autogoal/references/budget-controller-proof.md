@@ -1,0 +1,12 @@
+# Request-bound reservation proof
+
+Use scripts/budget_controller.py only for its trusted-controller synthetic FIXTURE_UNITS scope. It has no real provider adapter, price guarantee, wire authentication or monetary authorization. Keep native live execution closed until those controls are separately enforced and qualified.
+
+- Commit a controller-computed conservative exposure reservation before invoking the adapter. Serialize cap/identity admission with a real SQLite immediate transaction; never accept a worker-supplied tariff, budget, refund or endpoint.
+- Bind permanent request identity to payload digest, subject, model, bounds, immutable config and scope. Refuse changed identities and duplicate forwarding after restart. Crash windows may waste capacity but must not allow replay or refund of possibly forwarded requests.
+- Exercise concurrent admissions and crash-before/after-effect, killed deadlines and completion-lock failures with bounded actual processes/SQLite, not mocked locks. Keep all uncertainty charged conservatively.
+- Validate integer bounds, overflow, request shape, exact schema/config and persisted row consistency before forwarding. Refuse foreign/incompatible state without resetting or migrating it to obtain a pass. Controller-private ledger integrity remains a prerequisite; this API does not protect against malicious file rollback.
+- Distinguish durable attempt authorization, callback attempt and external effect. Resolve/check the callback before setting its attempt flag. Missing/noncallable wiring stays uncertain without claiming forwarding; a callback failure can leave forwarded=true as an attempted callback, never as evidence of an effect.
+- Close fixture SQLite connections explicitly while preserving transaction commit/rollback. sqlite3's connection context manager does not close the connection. Test post-exit closure and committed/rolled-back state; retain warning-bearing receipts and regate changed test bytes.
+- Use observed RED/GREEN tests for fixes and immutable negative-control review. Record limits, logs, before/after source and environment inputs. Qualify the exact dependent candidate and read its ref/tree back; do not transfer approval to changed blobs.
+- Report synthetic capacity and rates only as fixture units. They do not establish real provider monetary caps, runtime containment, authenticated transport or actual native lifecycle acknowledgements. Preserve those NOT_RUN boundaries after this slice ships locally.

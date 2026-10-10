@@ -1,0 +1,27 @@
+# Proving worker resource safeguards
+
+## 1. Containment and cancellation
+
+Use `scripts/native_containment.py` only for its admitted Linux x86_64/Python 3.12 Python/true/systemctl fixtures. It is not a model-worker launch authorization or arbitrary hostile-code sandbox. Preserve the native execution gate until vetted controller-bound spending and provider routing are enforced.
+
+- Combine a private user-systemd cgroup with bubblewrap namespaces and narrow trusted read-only runtime mounts. Hide host homes and manager buses; clear inherited credentials/routing. A root read-only bind still exposes credentials. Set independent manager-side runtime limits; process-group cancellation alone misses setsid or relocated workers.
+- Verify manager and kernel controls before releasing the target. Report configuration/readback separately from limit-exhaustion tests. Root-owned runtime and cooperative pathname ownership remain prerequisites, not guarantees against hostile host writers.
+- Keep installed-backend tests explicitly opt-in and excluded by offline discovery regression. Reuse focused evidence only when before/after source and relevant runtime/dependency identity match. Installed local fixtures are not native/provider acceptance.
+- Require unit absence, known cgroup absence and emptiness, and observed host PID starttime disappearance for VERIFIED cleanup. CLI success and cancellation acknowledgement must use this same complete predicate. An empty still-present or unknown cgroup is insufficient.
+- Check cancellation before dispatch, during readiness and immediately before target release. State the cooperative race after the last checkpoint; do not promise atomic cancellation.
+- Attempt stopping the exact owned random unit even if dispatch acknowledgement or observation fails. Separate best-effort observation, stop attempts and final readback. Failed readback stays UNVERIFIED; never infer cleanup from an attempted stop.
+- Prove timeout, successful leader exit with detached descendants, caller cancellation and synthetic outside-job secret isolation using disposable services. Observe host cgroup PIDs/starttimes rather than treating namespace PIDs as host identities.
+- Inject false-success receipts, failed cleanup/observations and cancellation at boundaries in synthetic tests. Run repaired tests against the original immutable candidate to show meaningful failures; then review the repaired candidate independently.
+- Preserve original failed verdicts and receipts. Save repaired candidates through a temporary index, gate exact attributed trees, read refs back and keep shared HEAD/index untouched. Approval of this slice never closes actual native lifecycle or protected-main delivery acceptance.
+
+## 2. Request-bound budget admission
+
+1. Define the trust boundary before implementing storage: keep tariff, cap, ledger and forwarding adapter controller-owned; treat worker request fields as untrusted. Label synthetic units explicitly. Do not infer a monetary bound from a fixture tariff, included subscription price or a callback name.
+2. Use bounded integer charges and a private SQLite transaction (`BEGIN IMMEDIATE`) to validate persisted schema/config/rows and reserve worst-case exposure before forwarding. Bind each durable request identity to payload, subject, model, output bounds and controller configuration/scope. Refuse incompatible state rather than resetting or migrating it for a pass.
+3. Commit the reservation before attempting the adapter call. Preserve exposure after exceptions, crashes, killed deadlines or uncertain completion; never automatically refund or replay a possibly forwarded request. Conservative capacity loss is safer than duplicate authorization. State that remaining capacity is an admission snapshot, not a fresh concurrent balance.
+4. Resolve a callable adapter before recording a forwarding attempt. Treat that flag as an attempt, not proof of an external effect; missing/noncallable wiring must not claim forwarding. Trusted synchronous-adapter assumptions do not establish native transport authentication or complete provider-route containment.
+5. Test concurrency with real bounded processes and SQLite, not mocked locks. Inject crashes before and after a durable fixture effect, completion-lock failures, restart/replay, changed identities, malformed state and exhausted capacity; assert zero adapter calls on admission refusal.
+6. Close SQLite test connections explicitly while preserving transaction commit/rollback. `with sqlite3.connect(...)` controls the transaction but does not close the connection; wrap it in a context manager with `close()` in `finally` to avoid leaked handles and misleading warning-laden passes.
+7. From the skill repository root, run `PYTHONDONTWRITEBYTECODE=1 python3 autogoal/scripts/test_budget_controller.py -v` with before/after source hashes. Keep real installed containment checks separate: `CONTAINMENT_LINUX_TESTS=1 PYTHONDONTWRITEBYTECODE=1 python3 autogoal/scripts/test_native_containment_linux.py`. Review the exact candidate, reuse unchanged focused evidence, and run one broader frozen-candidate gate for changed bytes.
+
+Keep actual monetary/native lifecycle acceptance open until vetted provider bounds, authenticated controller transport and route containment are exercised. Fixture admission, successful local cancellation and independent static approval prove only their named scopes.

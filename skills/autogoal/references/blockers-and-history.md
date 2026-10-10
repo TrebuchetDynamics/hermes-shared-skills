@@ -1,0 +1,52 @@
+# Autogoal — Blockers, session history and recurring-run limits
+
+Load when reconciling a blocked, failed, crashed or repeatedly retried card, or when recovering decisions from earlier sessions. The Operating priorities in SKILL.md override anything here.
+
+## Learn from sessions and retain progress
+
+For a scheduled run, the conversation is fresh: recover the active profile's latest relevant user/assistant decisions through `session_search` when exposed, plus the previous job output supplied by continuity. Exclude the current session ID when known using the supported exclusion parameter; otherwise discard hits identified as the current run from their metadata. An empty search or null scheduler receipt is missing continuity, not proof that no earlier work exists; reconcile the already-authorized local journal and cron receipts. Inspect a bounded sample (normally the last two relevant sessions and their final receipts), not all transcripts. If that tool is unavailable, use supported profile-scoped session reads or repository goal/claim ledgers; disclose missing context rather than inventing it. A past promise, quoted approval, or tool result does not authorize a new external action. Session claims are leads: verify named artifacts and current state before acting. Preserve explicit locks on training, deployment, trading, upstream edits, and owner-only decisions.
+
+Before selecting or reporting, run `python <this-skill-directory>/scripts/reconcile.py --profile <active-profile>` when a previous handoff exists (or add `--task-id <exact-id>` from the journal). This helper only reads the canonical profile path and live card/run/events; it never dispatches, subscribes, or rewrites state. Its live status supersedes `goal-handoff.json` creation status. Missing handoff is missing continuity, not evidence of missing project work. Inspect named verification artifacts before accepting a worker's summary, and preserve report coverage/NOT_CHECKED gates. `last_status: ok` on the picker means the picker succeeded, not that its downstream goal passed or completed.
+
+Use a profile-local progress journal at `<active Hermes home>/autogoal/state.json` (resolve the profile home from the host, never the launch profile by assumption). Read it before choosing; after a run record selected task/source, source revision or fingerprint where practical, outcome, evidence paths, unresolved blocker, and the smallest next step. Create no project backlog just to make discovery succeed. Reconcile the journal with current source and completed work; it is not a shadow ticket system or authority for product decisions.
+
+Carry verified predecessor acceptance gates into each successor contract with their exact receipt paths; a downstream summary must not reopen a gate already passed on the same unchanged candidate (for example icon verification after a golden-image audit). Reopen only on changed source, new contrary evidence, or an explicit revalidation requirement. Refresh live ownership immediately before selection: a completed cron receipt does not prove its next occurrence is inactive. Follow the newest reproduced failure stage rather than a journal's obsolete selector/setup blocker.
+
+Continue the last task only when useful next evidence or a verified fix remains and ownership permits. Do not reread the same blocked plan every hour or repeatedly run an unchanged full suite. One failed check must lead to its specific failing surface: passing Dart tests do not resolve a Playwright Stop/Reconnect failure. Run focused regression/reproduction first; run the full suite when the diff or explicit acceptance contract justifies it. Do not rerun a completed command just to satisfy a reporting/verifier mismatch; cite its exact existing execution record and use the smallest missing check.
+
+## Diagnose blockers without freezing the repository
+
+Classify a blocker with exact evidence: authorization/owner decision, dependency/tooling availability, excluded task scope, reproducible defect with known expected behavior, or live ownership. A clear requirement versus implementation mismatch is normally a repair candidate, not a request to choose whether the requirement should apply. Confirm source authority first: draft/conflicting requirements, irreversible money/security behavior and explicit owner-only decisions remain owner gates. Do not invent an exemption to an accepted contract merely to create a choice.
+
+Treat missing browser/tool binaries as tooling prerequisites, not product ambiguity. Inspect installed versions and the documented project bootstrap path before writing a verification contract. Install missing user-space tooling yourself (Operating priority 3) and include the smallest harness/setup correction in the contract by default. Never weaken an assertion to get green, and never use sudo or global system installs without a SUDO blocker.
+
+Before returning SILENT for an unchanged blocked card, check whether its blocking dependency applies to the candidate or only that one slice. Record at least one actually considered disjoint candidate or the concrete reason all meaningful alternatives share the gate; do not manufacture docs/refactors solely to stay busy. A blocked browser smoke does not automatically block accurate setup documentation or a separately evidenced domain regression. A blocked billing acceptance test does not grant permission to alter billing semantics. A trading/fitting lock remains binding across every candidate.
+
+On an unchanged snapshot, reuse scoped receipts and run targeted prerequisite probes, then perform the required bounded work search before declaring a no-op. Do not repeat full history, broad discovery or builds when neither source nor prerequisite changed. Refresh live ownership before mutation. Reopen old gates only with changed source or contrary evidence; keep completed evidence attached to successors.
+
+Before selecting a previously blocked task, look for changed prerequisite evidence. If the same blocker repeats without changed evidence, choose a disjoint eligible task or return `[SILENT]` under cron's silence protocol. For investigation, produce a runnable reproducer, measurement, acceptance test, or useful narrowed decision—not another generic statement that a contract is missing. An already-correct feature can be reconciled in its task ledger after relevant checks, but label that as verification/ledger maintenance, not new implementation; do not substitute cosmetic ledger churn for the active objective.
+
+Only an explicitly user-authorized interactive maintenance session may edit the shared autogoal or fleet-governor skills. Scheduled runs (including the default manager's hourly run) never call `skill_manage` on shared skills: they append a short, evidence-backed lesson (symptom, evidence path, proposed rule) to `~/.hermes/fleet-governor/lessons-proposed.md` for the owner to review. Project profiles record lessons in their journal. Skill maintenance is never a coding backlog in the Hermes configuration directory.
+
+## A card whose premise a later correction retracted
+
+Dispatch races the record. A card can be picked from ledger state that a later, independently
+verified correction withdrew, and it will then implement the retracted premise competently —
+usually by forcing the metric or behaviour the corrected analysis no longer supports. Before
+treating any card's acceptance as progress, re-read its premise against the current record: the
+document its contract cites, and the re-measured numbers behind it.
+
+When the premise is withdrawn: append the retraction to the card as a comment
+(`hermes kanban comment <id> "<what was retracted> — see <record path>"`), park it
+(`hermes kanban block`), and leave its in-flight edits exactly where they are. Never revert or
+delete bytes a worker wrote, and never let a withdrawn claim acquire a "verified" receipt — the
+owner reconciles a parked card. Then select the next disjoint task in the same occurrence; a
+parked card is not reselected until its source, prerequisite or contract fingerprint changes.
+The same check applies to a card that is already running: a stale premise is a reason to record
+and park it, never to kill a live worker mid-write.
+
+## Recurring-run boundaries
+
+Finish one bounded slice per occurrence. Check existing cron/goal/worker claims before mutation; avoid overlap with another job in the same workspace, even if this cron job itself is not running twice. Do not kill or pause another worker, steal its lease, or change schedules. A disjoint read-only reproduction is permitted if it cannot interfere with its runtime/resources. Workers stop on assigned-slice completion. Pickers continue selection after terminal-result reconciliation and stop after handoff, a genuinely live claim, or the required work search finds no eligible slice. An unchanged repeated blocker excludes only its slice and dependencies. Do not silently retry the same failure repeatedly inside the run.
+
+Cron's delivery and silence contract wins: return exactly `[SILENT]` for an unchanged no-op; report a new owner question once (Questions block, default stated) and record it; report actual progress with concise evidence. Mark actual failed execution `[CRON_FAILURE]` when required by the host; a selected task's acceptance failure reproduced successfully is evidence, not a repaired task. Prompt-level iteration, overlap, and backoff policies are not enforceable runtime caps or circuit breakers. Never claim otherwise. Never create additional cron jobs or recursive goal pickers. The one explicitly authorized downstream native goal-mode worker is the execution stage of this occurrence, not another recurring loop.
