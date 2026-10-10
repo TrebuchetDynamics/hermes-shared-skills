@@ -1,6 +1,6 @@
 ---
 name: repository-maintenance
-description: Sync repositories and submodules to upstream main.
+description: Verify upstream status or explicitly sync repositories.
 version: 0.1.0
 author: Hermes
 license: MIT
@@ -18,6 +18,14 @@ Synchronize a repository or a superproject and its declared submodules to their 
 - “Update all repos,” “use main branches,” or “make every repo upstream-current.”
 - “Clean local changes” when the user explicitly authorizes discarding them.
 - A project root declares Git submodules and the user includes them in scope.
+
+## Read-only verification mode
+
+For status, provenance, clone identity or release freshness questions, load [upstream-reference-verification.md](references/upstream-reference-verification.md), steps 1–6 only. Use read-only local checks and bounded `ls-remote`; no fetch, pull, reset, clean, clone, switch, build, install or restart is authorized. Report provenance, cleanliness and live freshness separately. Cached refs are not current remote evidence. Stop after the verification verdict; never fall through to synchronization.
+
+## Synchronization mode
+
+The prerequisites, Quick Reference, Procedure and Verification below apply only to explicitly authorized synchronization, not status questions. Separate publishing/discard permissions remain required.
 
 ## Prerequisites
 

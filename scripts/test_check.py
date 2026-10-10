@@ -14,9 +14,14 @@ class DiscoveryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             offline = ['fleet-status/scripts/test_status.py', 'extras/vendor/test_sync_vendor.py',
-                       'scripts/test_check.py', 'autogoal/scripts/test_picker_policy.py']
+                       'scripts/test_check.py', 'autogoal/scripts/test_picker_policy.py',
+                       'autogoal/scripts/test_native_containment.py',
+                       'autogoal/scripts/test_controller_bridge.py']
             excluded = ['repo-docs/scripts/test_goal_gap_regression.py',
                         'hard-blockers/scripts/test_repo_docs.py',
+                        'autogoal/scripts/test_native_lifecycle_controls.py',
+                        'autogoal/scripts/test_native_containment_linux.py',
+                        'autogoal/scripts/test_controller_bridge_linux.py',
                         'vendor/upstream/test_foreign.py', '.git/test_hidden.py']
             for name in offline + excluded:
                 p = root / name
