@@ -481,18 +481,23 @@ def backlog_check(a):
                 local_reference(repo, resolved + (separator + heading if separator else ''), blobs, reasons)
     picks = []
     data = None
-    if not reasons:
+    if blobs['goals.json'] is not None:
         try:
             ledger_blob = blobs['goals.json']
             assert ledger_blob is not None
             data = json.loads(ledger_blob)
-            reasons.extend(errors(data))
-            if not reasons:
+            ledger_errors = errors(data)
+            reasons.extend(ledger_errors)
+            if ledger_errors:
+                data = None
+            elif not reasons:
                 picks = [t['id'] for t, _ in eligible(normalize(json.loads(ledger_blob)))]
         except (ValueError, TypeError, KeyError, AttributeError) as exc:
             reasons.append(f'invalid backlog: {exc}')
             data = None
-    if data is not None and not reasons:
+    # Plan metadata and task contracts are independent repairable inputs. Report
+    # both in one pass, but never turn a partial diagnostic into readiness.
+    if data is not None and blobs['TODO.md'] is not None:
         todo_blob = blobs['TODO.md']
         assert todo_blob is not None
         bodies = task_bodies(todo_blob.decode('utf-8'))

@@ -14,6 +14,14 @@ Report its JSON state and exit: `draft_saved` (1),
 `backlog_reconciled_not_eligible` (2), or `ready_for_autogoal` (0).
 Readiness is not execution authorization or a live ownership check.
 
+Diagnose all check reasons before closing the handoff. When existing owner acceptance
+unambiguously covers the section, repo-docs repairs its exact status metadata and
+other clerical contract defects in the authorized Maintain pass, then reruns the
+same consumer check. Preserve approval evidence, scope exclusions and Proposed
+decisions. Missing approval stays draft. See
+[decisive planning](../repo-docs/references/decisive-planning.md); never stop at a
+repairable `draft_saved` or substitute queue size for an ordered implementation plan.
+
 For an explicit plan slice, select only its named IDs. Reconcile existing workers,
 dependencies, current source and primary milestone before handoff. A usable
 backlog does not require a fresh documentation prepass. If the named slice differs

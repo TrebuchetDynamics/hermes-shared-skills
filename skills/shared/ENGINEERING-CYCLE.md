@@ -23,6 +23,7 @@ Record selected identity/path and any unavailable dependency in the handoff.
 | Missing specification | `spec-driven-development` | Reuse the accepted spec/PRD; do not restart accepted design. |
 | Changed behavior or architectural decision | `documentation-and-adrs` | Amend affected docs/ADR with observed facts; repo-docs owns backlog reconciliation. |
 | Accepted work needs bounded tasks | `planning-and-task-breakdown` | Add dependencies, scope and checks to canonical `goals.json` and root `TODO.md`. |
+| A consequential planning assumption needs scrutiny | `doubt-driven-development` | Test the artifact/contract; record corrections and unresolved risks. |
 | Implement an eligible slice | `incremental-implementation` | Keep one observable result, owned files and task ID. |
 | Changed logic or a bug | `test-driven-development` | Run the repository's discriminating red/green checks. |
 | Review an implemented slice | `code-review-and-quality` | Use its review criteria within the required native review lane. |
@@ -30,6 +31,12 @@ Record selected identity/path and any unavailable dependency in the handoff.
 Load only relevant skills, not this whole table. Adapt upstream examples such as
 `tasks/todo.md`, new spec files and automatic commits to existing owners and
 permissions; never create a competing backlog or duplicate accepted tasks.
+
+For repo-docs, apply these skills through
+[decisive planning](../repo-docs/references/decisive-planning.md): evidence-backed
+Now/Next ordering, bounded bodies and repaired consumer contracts are the outputs.
+Record selected skill → changed owner/decision/check; a list of loaded skills does
+not establish application. A usable accepted backlog does not need repeated planning.
 
 TDD identity collision: addyosmani's copy may be at
 `<profile-home>/skills/test-driven-development/SKILL.md`, while Hermes's bundled

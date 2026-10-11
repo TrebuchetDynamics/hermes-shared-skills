@@ -1,7 +1,7 @@
 ---
 name: repo-docs
 description: "Use when maintaining repo docs and goal-linked tasks."
-version: 0.7.1
+version: 0.8.0
 license: MIT
 metadata:
   hermes:
@@ -137,6 +137,11 @@ CHANGELOG records implemented/released changes, not proposals or routine doc chu
 
 ## 5. Goal-gap analysis and task bodies
 
+Load [decisive planning](references/decisive-planning.md) when decomposing accepted
+work, ordering a large queue or repairing a failed handoff. Produce an evidence-backed
+Now/Next decision in the existing owner; task counts alone are not planning. Apply
+verified relevant Addy skills to those concrete artifacts, not merely a skill list.
+
 Fix in-scope supported docs now, not merely queue repairs. Route behavior to
 PRD/spec/contracts/tests, decisions to ADR/spec, setup to README/runbook, operations
 to runbook, verification to test-plan, releases to CHANGELOG. Audit reports ranked
@@ -216,6 +221,11 @@ when an actual owner decision supports it. Explain the accepted scope and any
 remaining Proposed architecture on subsequent lines; appending qualifications to
 this machine-read status line prevents exact recognition of an otherwise accepted
 section. Do not change approval meaning merely to obtain a passing check.
+
+If actual acceptance already proves this section's scope, repair missing or malformed
+status metadata in this pass and rerun the same check. `draft_saved` is a diagnostic,
+not a stopping point for an authorized clerical repair. Without acceptance evidence,
+retain draft status and identify the unresolved decision; never manufacture approval.
 
 Optional: `--canonical-repo /absolute/primary`, `--expected-revision TOKEN`,
 `--receipt prior.json`. JSON stdout is the receipt; retain it only at an existing
