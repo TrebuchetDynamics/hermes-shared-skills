@@ -201,6 +201,11 @@ capacity limit, so some commands must be typed rather than selected in the menu.
 | `/git-pull-merge` | `/git_pull_merge` | Pull and merge changes |
 | `/lgtm` | `/lgtm` | Continue from an approved checkpoint |
 | `/repo-docs` | `/repo_docs` | Maintain repository documentation |
+| `/repo-interview` | `/repo_interview` | Answer focused questions, then update docs and plans |
+
+Use `/repo-interview` when you want questions before planning. It asks one at a
+time, reuses existing answers, and saves decisions through repo-docs. Add
+`questions only` for an interview without file changes.
 
 For example, type `/repo-docs update the architecture documentation` in Hermes
 CLI chat, or `/git_commit_push only src/; no push` in Telegram. Arguments are

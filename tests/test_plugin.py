@@ -162,7 +162,7 @@ class PluginTests(unittest.TestCase):
     def test_repository_skills_are_all_discovered(self):
         self.plugin.SKILLS_DIR = ROOT / "skills"
         self.plugin.register(self.ctx)
-        self.assertTrue({"autogoal", "git-commit-push", "git-pull-merge", "lgtm", "repo-docs"}
+        self.assertTrue({"autogoal", "git-commit-push", "git-pull-merge", "lgtm", "repo-docs", "repo-interview"}
                         <= set(self.ctx.commands))
 
 

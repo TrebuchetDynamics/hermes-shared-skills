@@ -90,7 +90,7 @@ def main():
             runner, event=None, command='new', title='New', detail='test', execute=execute))
         assert result == 'executed' and called == [True]
         commands = get_plugin_commands()
-        assert {"autogoal", "git-commit-push", "git-pull-merge", "lgtm", "repo-docs"} <= commands.keys()
+        assert {"autogoal", "git-commit-push", "git-pull-merge", "lgtm", "repo-docs", "repo-interview"} <= commands.keys()
         assert manager.find_plugin_skill("hermes-toolset:repo-docs") == root / "skills/repo-docs/SKILL.md"
         payload = json.loads(skill_view("hermes-toolset:repo-docs"))
         assert "error" not in payload, payload
@@ -98,6 +98,9 @@ def main():
         menu, _ = telegram_menu_commands()
         assert "git_commit_push" in dict(menu), menu
         assert "repo_docs" in dict(menu), menu
+        assert "repo_interview" in dict(menu), menu
+        interview = json.loads(skill_view("hermes-toolset:repo-interview"))
+        assert "error" not in interview, interview
 
         cli = SimpleNamespace(_pending_input=Queue(), _agent_running=False)
         manager._cli_ref = cli
