@@ -571,15 +571,45 @@ review acknowledgement separately before claiming a verified review handoff.
 
 ## Local agent commits (Operating priority 14)
 
-After acceptance, use `<this-skill-directory>/scripts/agent_commit.sh <repo>
-<profile> <card-id> "<message>" <files>...` with only files this worker changed.
+Before review handoff or completion, run the required acceptance commands through
+`finish_task.py` and commit the validated owned files:
+
+```sh
+python3 <this-skill-directory>/scripts/finish_task.py --repo <worker-worktree> \
+  --profile <profile> --card <card-id> --message "<task summary>" \
+  --check-json '["python3", "-m", "unittest", "tests.test_slice"]' \
+  -- <owned-file> <owned-test-file>
+```
+
+Repeat `--check-json` for every required acceptance command (JSON argv, no shell
+expansion); `--timeout` bounds each command, default 2400 seconds. Use this gate as
+the final acceptance run instead of repeating unchanged passing gates. Checks
+that rewrite owned files produce `source_changed`: inspect and rerun on the final
+source. Failed validation never invokes the commit helper. The command exits
+nonzero for validation/commit failures; preserve diagnostics, fix within scope,
+and retry. Never complete or request review on `commit_failed`.
+
+The gate invokes `bash scripts/agent_commit.sh <repo> <profile> <card-id>
+"<message>" <files>...`. Files must be explicit root-relative owned files, including
+deletions; directories and broad pathspecs are refused. A listed file must contain
+only attributable task edits; isolate foreign hunks before using the helper.
 It writes `agent/<profile>/<card-id>` through a temporary index without switching
 branches or touching HEAD, the real index, working tree or foreign dirty files.
-Commit again after review fixes on the same agent branch. Never commit secrets or
-generated build output. Report the branch and SHA in the completion receipt.
-The integration owner assembles attributed commits and lands a protected PR only
-after required checks; workers never merge or push. Explicit task restrictions
-(such as no commit) still win over this standing local-commit permission.
+The helper refuses a ref checked out in any worktree. Commit again after review
+fixes on the same agent branch. Never commit secrets or generated build output.
+Report `status: committed`, branch and exact SHA in the completion receipt.
+`no_changes` means no new commit: cite the existing source and acceptance evidence,
+never fabricate a SHA or an implementation delta. If expected changes are missing,
+resolve their location/attribution before claiming acceptance.
+
+Explicit task/repository restrictions (such as no commit) win: skip this helper,
+run checks separately and report the restriction plus any uncommitted owned files.
+The integration owner lands a protected PR after required checks; this standing
+local-commit requirement never authorizes a push or merge. Existing separately
+validated task-ref publication authority remains the only scoped push exception.
+The helper executes checks and commits when invoked; it cannot independently
+establish file ownership, completeness of chosen checks, or force a native worker
+to invoke it. The generated worker definition of done requires its receipt.
 
 ## Execute and verify (goal worker)
 

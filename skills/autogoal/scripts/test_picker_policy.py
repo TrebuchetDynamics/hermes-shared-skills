@@ -16,7 +16,7 @@ class PickerPolicyTests(unittest.TestCase):
             self.assertIn(phrase,text)
     def test_no_early_exit_and_terminal_results_continue(self):
         text=Path(__file__).resolve().parents[1].joinpath('SKILL.md').read_text()
-        for phrase in ['version: 0.23.0', "Ask, don't block", 'Repo-docs runs separately', 'goals.py next', 'never fingerprint-exit', 'On EVERY idle occurrence', 'A completed card is not a stop condition', 'Disable change-only fingerprint monitors', 'autogoal_gate.py', 'CONTINUE selection', 'work_search', 'not a runtime guarantee']:
+        for phrase in ['version: 0.24.0', "Ask, don't block", 'Repo-docs runs separately', 'goals.py next', 'never fingerprint-exit', 'On EVERY idle occurrence', 'A completed card is not a stop condition', 'Disable change-only fingerprint monitors', 'autogoal_gate.py', 'CONTINUE selection', 'work_search', 'not a runtime guarantee']:
             self.assertIn(phrase, text)
         for obsolete in ['Step 0 — fast exit', 'return `[SILENT]` immediately', 'Step 0 fast exit bounds']:
             self.assertNotIn(obsolete, text)

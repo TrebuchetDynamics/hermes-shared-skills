@@ -55,7 +55,8 @@ class WorkerRoles(unittest.TestCase):
             verified = validator(authority, source, 'fixture-worker', 'T-one', 'Fixture contract')
             body = goal.build_task_body('Fixture contract', ledger_mode='proposal',
                                         integration_owner='fixture-integrator', publication_authority=verified)
-            self.assertIn('HEAD:refs/heads/agent/fixture-worker/T-one', body)
+            self.assertIn('<receipt-commit-sha>:refs/heads/agent/fixture-worker/T-one', body)
+            self.assertNotIn(' HEAD:', body)
             self.assertIn('caller_attestation_not_independent_authorization', body)
             self.assertNotIn('and no push, merge', body)
             self.assertNotIn('goals.py task <repo> <TASK> done', body)

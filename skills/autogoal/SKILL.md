@@ -1,7 +1,7 @@
 ---
 name: autogoal
 description: "Use when picking project work. Delegate a bounded task."
-version: 0.23.0
+version: 0.24.0
 author: Hermes Agent
 platforms: [linux, macos]
 metadata:
@@ -87,7 +87,7 @@ Only explicit whole-spec requests use `references/whole-spec-execution.md` inste
    meanwhile. Choose 50 turns, or explicit 100 with `Goal budget rationale:` explaining
    one coherent outcome. Stop at acceptance, not budget exhaustion; never spend turns
    merely because available. If acceptance cannot fit, narrow it before dispatch.
-7. **Done means scoped done.** Finish when checks pass; never rerun an unchanged
+7. **Done means scoped done.** Finish after checks pass and owned changes are committed; never rerun an unchanged
    passing gate merely to refresh status metadata. NOT_CHECKED is not qualification.
    Separate implemented, exact-source/platform qualification and verified main delivery.
    Explain progress in user outcomes: overall goal, current slice, what is still unproved.
@@ -132,13 +132,12 @@ Only explicit whole-spec requests use `references/whole-spec-execution.md` inste
 12. **Board queries.** Use `hermes kanban list/show/runs --json` piped through `jq`
     with `--assignee`/`--status` filters. Never hand-write SQL against kanban.db,
     and never `json.loads` raw terminal output of a whole-board listing.
-14. **Local commits.** After acceptance, use only `scripts/agent_commit.sh` for owned
-    files on `agent/<profile>/<card-id>`; see references/handoff.md for exact commands.
-    Never commit to main/master/the checked-out branch, never
-    push, merge, rebase, amend or force-update a branch you did not create.
-    Preserve foreign work; never commit secrets or generated output. The integration
-    owner lands a protected PR after required checks, no direct main push or bypass.
-    Workers never merge or push. Review/commit alone is not delivery.
+14. **Local commits required.** Before review/completion, run `scripts/finish_task.py`
+    for acceptance checks and owned files; report branch/SHA. Failure is incomplete;
+    no_changes means no new commit. Explicit no-commit instructions win.
+    See references/handoff.md for commands, ownership and delivery safeguards.
+    Never commit foreign work, secrets or build output; never
+    push, merge, rebase, amend or bypass protected PR checks without explicit authority.
 13. **State hygiene.** Keep `autogoal/state.json` under ~20 KB: the last 20 entries
     with a fixed schema; older entries go to `autogoal/history/`. Keep picker
     receipts to the last 10. Preserve downstream launch inputs outside disposable

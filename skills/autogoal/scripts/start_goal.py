@@ -138,7 +138,8 @@ def require_fresh_sources(snapshot_file, workspace):
 
 
 REVIEW_DOD = ('Definition of done for this card (goal judge): the contract below is implemented, its '
-              'checks have run with evidence recorded, and the card is handed to native review. Review '
+              'checks have run with evidence recorded, owned changes are committed (or an explicit no-commit '
+              'instruction/no-change result is recorded), and the card is handed to native review. Review '
               'approval happens after that handoff and is NOT part of this goal: a pending review never makes '
               'this goal unfinished or unachievable.')
 
@@ -200,6 +201,17 @@ def build_task_body(contract, goal_max_turns=BUDGET, *, ledger_mode='worker',
             'never waive safety, acceptance criteria or required checks for a smaller diff. '
             'Read repository instructions and preserve dirty-file ownership. Hermes Agent/Desktop/Conduit '
             'and other upstream/vendor references are unmodified; changes stay inside the boundaries this profile\'s SOUL authorizes. '
+            f'Mandatory completion gate: run `python3 {Path(__file__).with_name("finish_task.py").resolve()} '
+            '--repo <workspace> --profile <profile> --card <card-id> --message "<task summary>" '
+            '--check-json \'["<check executable>", "<arg>"]\' -- <owned-file>...` before review handoff or kanban_complete; '
+            'repeat --check-json for each required acceptance command. Its agent_commit.sh helper commits '
+            'only explicit owned files to agent/<profile>/<card-id>, preserving HEAD and unrelated staged work. '
+            'Require status committed and report its exact branch/SHA; validation_failed, source_changed or '
+            'commit_failed leaves implementation incomplete: fix within scope and retry, never claim done. '
+            'A no_changes receipt is truthful only for no new owned delta; cite existing source and checks, '
+            'never claim a new commit. Explicit no-commit instructions take precedence: do not invoke the gate; '
+            'run checks separately and report the restriction and uncommitted files. Do not include foreign '
+            'hunks in an owned filename; isolate attribution first. After review fixes rerun the gate. '
             'Commit only with the autogoal agent_commit.sh helper to agent/<profile>/<card-id>; '
             'the integration owner assembles attributed commits for a protected PR with required checks, '
             'no direct main push or protection bypass. Workers perform no other commit, and no push, merge, deploy, '
@@ -275,8 +287,9 @@ def build_task_body(contract, goal_max_turns=BUDGET, *, ledger_mode='worker',
         body += (' Scoped task-ref publication authority: after acceptance and owned local commit only, '
                  'the caller supplied owner evidence ' + publication_authority['evidence_ref'] +
                  ' (' + publication_authority['authority_validation'] + '). The ONLY permitted Git publication is `git push ' +
-                 shlex.quote(publication_authority['remote']) + ' HEAD:' + shlex.quote(publication_authority['ref']) +
-                 '` from this owned task workspace; read back the exact remote ref and commit. '
+                 shlex.quote(publication_authority['remote']) + ' <receipt-commit-sha>:' + shlex.quote(publication_authority['ref']) +
+                 '` from this owned task workspace, substituting the verified local commit receipt SHA '
+                 '(HEAD is unchanged by agent_commit.sh); read back the exact remote ref and commit. '
                  'No force/delete, other refs/remotes, main push, merge, deploy, release or profile/schedule change. '
                  'This instruction is not runtime permission enforcement or independent approval; preserve all host and '
                  'repository gates, and refuse if current owner authority/ref ownership cannot be confirmed.')
