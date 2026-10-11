@@ -76,6 +76,8 @@ def register(ctx):
     from hermes_cli.plugins import get_plugin_commands
 
     skills = _discover_skills()
+    from .runtime_defaults import apply_runtime_defaults
+    apply_runtime_defaults(ctx)
     existing = get_plugin_commands()
     for name, command, path in skills:
         ctx.register_skill(name, path)

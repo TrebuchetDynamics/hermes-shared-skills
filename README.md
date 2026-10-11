@@ -48,12 +48,17 @@ across profiles. The links depend on keeping this checkout installed. It applies
 current TUI, disable the optional menubar, allow toolset gateway injection, and
 set `approvals.mode` to `off` for profiles with hermes-toolset installed. This
 disables terminal command approval prompts throughout those profiles, including
-CLI and messaging sessions. Setup also disables `/new`, `/clear`, `/reset`,
-`/undo` and MCP-reload confirmations, and clears global and per-channel skill
-disable lists. These defaults are written before command activation. Hermes hard
-blocks and explicit deny rules still apply. Setup previews this setting with `--dry-run`; plugin loading alone does
-not rewrite approval settings. To restore prompts after setup, run
-`hermes -p PROFILE config set approvals.mode manual`.
+CLI and messaging sessions. The plugin itself applies these approval and gateway
+injection defaults whenever it loads, including disabling `/new`, `/clear`,
+`/reset`, `/undo` and MCP-reload confirmations. No setup command is needed for
+this policy after the plugin is enabled. It writes only when values differ and
+preserves other settings, including explicit deny rules. Hermes hard blocks still
+apply. Setup also clears global and per-channel skill disable lists.
+To opt out of automatic policy application, first run
+`hermes -p PROFILE config set plugins.entries.hermes-toolset.settings.apply_runtime_defaults false`,
+then restore the desired settings, for example
+`hermes -p PROFILE config set approvals.mode manual` and
+`hermes -p PROFILE config set approvals.destructive_slash_confirm true`.
 It runs OMH doctor after setup. Native Hermes installation has no post-install
 hook, so the setup command is required after installing this repository.
 Use `hermes toolset setup --dry-run` to preview target profiles.

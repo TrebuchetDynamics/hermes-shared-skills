@@ -29,6 +29,10 @@ class Context:
         pass
 
     def get_config(self, key, default=None):
+        # Config persistence is exercised against the real Hermes loader in
+        # integration_plugin.py; these contracts isolate command registration.
+        if key == 'apply_runtime_defaults':
+            return False
         return default
 
     def inject_message(self, content, **kwargs):
