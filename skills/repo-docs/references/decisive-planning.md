@@ -17,8 +17,11 @@ Compare relevant candidates without duplicating the ledger. Respect accepted foc
 and selector ordering. Prefer a ready slice that proves a user outcome or removes
 a demonstrated critical prerequisite. Within authorized priorities, weigh consequence,
 unblock value, evidence confidence and bounded effort; do not invent numeric scores
-or silently reprioritize goals. If the recommendation differs from the selector,
-explain the difference and retain it as a recommendation pending authorization.
+or silently reprioritize goals. For routine ordering within the accepted focus,
+use supported task-section controls under canonical ownership and revision guards,
+update the matching TODO body, then rerun `next`; a narrative ranking alone does
+not change selector state. Preserve live leases and dependencies. Changes to owner
+priorities, focus or product scope need authority not supplied by routine ordering.
 
 Apply verified skills from [the engineering cycle](../../shared/ENGINEERING-CYCLE.md)
 to concrete outputs, loading only those needed:
@@ -34,6 +37,18 @@ to concrete outputs, loading only those needed:
   isolate the artifact/contract, seek counterexamples and record corrections/checks.
   Apply its bounded review procedure when available; label degraded self-checks
   honestly, never as fresh-context review. Mechanical metadata repair needs no cycle.
+
+Also apply the engineering cycle's domain matrix: API work needs caller/error and
+compatibility criteria; migrations need transition/rollback; services need operational
+signals; CI changes need actual pipeline checks; UI needs interaction/accessibility
+criteria. Use `constraint-driven-development` to preserve the existing quality bar
+and `context-engineering` to make the worker contract self-contained. Load those
+skills when their trigger is present, and put their outputs in existing task bodies.
+
+Decide routine choices with evidence now; do not create `Needs decision` tasks for
+internal naming, test selection, document organization or equivalent implementation
+options. Distinguish a missing product requirement from an engineering choice
+inside an accepted requirement. Carry the chosen option, tradeoff and check forward.
 
 Record selected skill → changed owner/decision/check. A catalog listing is not
 application evidence. Missing capabilities never authorize installation, scanner

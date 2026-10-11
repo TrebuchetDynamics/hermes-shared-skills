@@ -36,6 +36,31 @@ class CycleGuidanceTests(unittest.TestCase):
                      'autogoal/references/whole-spec-execution.md'):
             self.assertIn('ENGINEERING-CYCLE.md', (ROOT / 'skills' / path).read_text())
 
+    def test_workers_receive_autonomous_decisions_and_skill_application_contract(self):
+        module = worker_module()
+        for kwargs in ({}, {'ledger_mode': 'proposal', 'integration_owner': 'fixture-owner'}):
+            body = module.build_task_body('Objective: fixture', **kwargs)
+            for phrase in ('Decide routine reversible choices yourself',
+                           'Skill application:', 'trigger, verified skill path, decision/artifact, check/result',
+                           'planning-and-task-breakdown', 'constraint-driven-development',
+                           'incremental-implementation', 'code-review-and-quality',
+                           'git-workflow-and-versioning'):
+                self.assertIn(phrase, body)
+            self.assertNotIn('Questions (no reply = defaults apply)', body)
+            self.assertIn('Mandatory completion gate:', body)
+            self.assertIn('required review acceptance', body)
+
+    def test_autonomy_does_not_turn_missing_intent_into_approval(self):
+        core = (ROOT / 'skills/autogoal/SKILL.md').read_text()
+        self.assertNotIn('proceed on the recommended reading', core)
+        self.assertIn('continue only independent authorized work', core)
+        self.assertIn('Silence never grants', core)
+        cycle = (ROOT / 'skills/shared/ENGINEERING-CYCLE.md').read_text()
+        for skill in ('api-and-interface-design', 'deprecation-and-migration',
+                      'ci-cd-and-automation', 'observability-and-instrumentation',
+                      'frontend-ui-engineering', 'context-engineering', 'code-simplification'):
+            self.assertIn(skill, cycle)
+
     def test_worker_body_links_cycle_and_gates_direct_closure_on_review(self):
         module = worker_module()
         body = module.build_task_body('Objective: fixture')

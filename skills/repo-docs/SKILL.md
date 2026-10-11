@@ -1,7 +1,7 @@
 ---
 name: repo-docs
 description: "Use when maintaining repo docs and goal-linked tasks."
-version: 0.8.0
+version: 0.9.0
 license: MIT
 metadata:
   hermes:
@@ -38,6 +38,11 @@ narrow scope. Explicit Audit/read-only scope changes no files, including TODO.md
 goals.json and BLOCKERS.md. Task-addition/brainstorming persistence is narrow
 Maintain, not bootstrap. Preserve IDs, focus, completed work, history, active owners
 and unrelated edits. State mode/scope briefly, then make the authorized changes.
+
+Apply the [autonomous decision rules](../shared/ENGINEERING-CYCLE.md#autonomous-decisions-are-the-default)
+and its phase/domain skill matrix at intake and handoff. Decide routine engineering
+choices now, record material reasoning, and carry decisions and skill-application
+receipts into task bodies; ask only for genuinely missing owner intent or authority.
 
 Do not force filenames, invent requirements, create empty scaffolds or present
 plans as implemented. Label missing intent in place as

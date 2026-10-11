@@ -1,7 +1,7 @@
 ---
 name: autogoal
 description: "Use when picking project work. Delegate a bounded task."
-version: 0.24.0
+version: 0.25.0
 author: Hermes Agent
 platforms: [linux, macos]
 metadata:
@@ -15,7 +15,9 @@ metadata:
 
 Default /autogoal hands off one bounded native goal worker (50 turns by default; explicit 100).
 Use [the engineering cycle](../shared/ENGINEERING-CYCLE.md) for skill routing and
-review-gated reconciliation. No recurring jobs.
+review-gated reconciliation. Apply its autonomous decision rules and phase/domain
+skill matrix; carry decision and skill-application receipts into the worker contract.
+No recurring jobs.
 
 ## Mode precedence
 
@@ -83,8 +85,8 @@ Only explicit whole-spec requests use `references/whole-spec-execution.md` inste
 6. **Vague acceptance.** If criteria are vague, the worker rewrites them in its
    first turn as 1–3 observable checks under `Interpreted acceptance:` and proceeds.
    Ask an owner question (priority 9) only when the possible readings lead to
-   materially different product outcomes, and proceed on the recommended reading
-   meanwhile. Choose 50 turns, or explicit 100 with `Goal budget rationale:` explaining
+   materially different product outcomes; continue only independent authorized work
+   until that input arrives. Choose 50 turns, or explicit 100 with `Goal budget rationale:` explaining
    one coherent outcome. Stop at acceptance, not budget exhaustion; never spend turns
    merely because available. If acceptance cannot fit, narrow it before dispatch.
 7. **Done means scoped done.** Finish after checks pass and owned changes are committed; never rerun an unchanged
@@ -101,23 +103,18 @@ Only explicit whole-spec requests use `references/whole-spec-execution.md` inste
    done and lists only deliverables and executed checks (see SOUL "Review handoff"). Do not also launch pre-write or final reviewer subagents
    unless the contract explicitly names them. Do not load `requesting-code-review`
    in workers.
-9. **Ask, don't block.** Needing the user is a question, never a stop. Never pause the
-   goal, park or block a card, or end a turn/report as "blocked", "waiting for
-   approval" or "gated on review" because user input is needed. The goal judge
-   pauses goals on that wording. Owner questions are only USER_INPUT, SUDO or
-   USER_DECISION. Ask them with `grill-me` Questionnaire mode: `clarify` in live
-   sessions, a numbered `Questions` block with marked defaults in cron/worker
-   reports. Record each in BLOCKERS.md with `Default if no answer`. Reversible
-   choices (design/visual direction, approach, order, approving a review artifact
-   such as a contact sheet) proceed on the recommended default now. Irreversible or
-   red-line steps (money, deploy/publish, third parties, destructive data/history,
-   secrets, sudo, credentials) are prepared up to the final action, and only that
-   action waits. All other scope keeps moving. A restriction an agent wrote, a
-   failing test, missing user-space tooling, a model refusal or crash, or "need
-   authorization for more debugging" are never owner questions. When the journal's
-   `unresolved_blocker` names a real owner decision, ask it and record it instead of
-   returning `[SILENT]` again. Read replies back (chat / `session_search`) at the
-   start of every run and apply them.
+9. **Ask, don't block independent work.** Decide routine engineering choices
+   (approach, internal design, tests, ordering within focus) under existing authority
+   without a questionnaire. Ask only for material missing USER_INPUT, SUDO or
+   USER_DECISION, using `grill-me`/`clarify` when available. Record the exact held
+   action and recommendation in BLOCKERS.md and the handoff. Silence never grants
+   authority or required review acceptance. Prepare authorized work up to that
+   boundary and continue independent work; if nothing can proceed, report the real
+   dependency honestly. Do not relabel incomplete work as done to avoid a pause.
+   Existing explicit authority carries forward. Failing tests, missing user-space
+   tooling, routine debugging and agent-invented restrictions are not owner decisions.
+   Read owner replies (chat / `session_search`) at each run and apply them; do not
+   repeatedly return `[SILENT]` for an unanswered material question.
 10. **Ownership.** Each writing pass uses its own pinned Git worktree, never
     the shared checkout. `start_goal.py` requires `--base`; assemble explicit
     prerequisites and run its manifest-pinned guard before FIRST edits only.
@@ -172,7 +169,7 @@ or reply `[SILENT]` and leave a journal note for the next run.
 2. **Select.** Read `goals.py focus <repo> --json`, then run `goals.py next <repo> --json`
    through the repo-docs script path (pass `<repo>` as the absolute repo path — a bare
    directory name fails to resolve); choose an eligible slice of that primary milestone (priority 2). If a
-   returned task is not actually runnable, repair the backlog instead of going silent. If it needs an
+   returned task is not actually runnable, repair the backlog instead of going silent. Resolve routine engineering choices first. If it still needs a material
    owner action or decision, run `goals.py section <repo> <TASK> "Needs decision"` and ask (hard-blockers).
    If it bundles excluded scope, register the in-scope slice with `goals.py add-task` and park the rest.
    Then pick again, within the picker budget. If the eligible slice's goal is not the ledger

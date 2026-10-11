@@ -220,6 +220,14 @@ collision; the skipped alias produces a warning and the qualified skill remains
 available. Choose distinctive names to avoid collisions with other plugins,
 local skills, and configured quick commands.
 
+Repo-docs and autogoal decide routine engineering choices autonomously within the
+accepted scope. They carry decisions into worker contracts and apply relevant
+[Addy agent-skills](https://github.com/addyosmani/agent-skills) throughout planning,
+implementation and verification, including API, UI, migration, CI and operational
+work. Handoffs identify the skill used, the artifact or decision it informed, and
+its check result. Missing owner intent or authority remains an explicit question;
+loading a skill alone is not proof of applying it.
+
 The [engineering cycle](skills/shared/ENGINEERING-CYCLE.md) connects accepted
 specs and existing `goals.json`/`TODO.md` tasks to targeted installed engineering
 skills, implementation, checks, native review and owner-ledger reconciliation.
