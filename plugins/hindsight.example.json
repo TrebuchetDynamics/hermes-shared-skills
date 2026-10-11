@@ -1,0 +1,6 @@
+{
+  "mode": "local_embedded",
+  "llm_provider": "ollama",
+  "llm_model": "gemma3:12b",
+  "llm_base_url": "http://localhost:11434"
+}

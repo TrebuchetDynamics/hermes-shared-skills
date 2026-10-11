@@ -23,7 +23,7 @@ class InstallPluginsTests(unittest.TestCase):
         self.script = self.repo / 'install-plugins.sh'
         if SCRIPT.exists():
             shutil.copy2(SCRIPT, self.script)
-        for name in ('install-graphify.py', 'install-omh.py', 'bundle.py', 'plugin.yaml'):
+        for name in ('install-graphify.py', 'install-omh.py', 'install-hindsight.py', 'bundle.py', 'plugin.yaml'):
             helper = SCRIPT.parent / name
             if helper.exists():
                 shutil.copy2(helper, self.repo / name)
@@ -216,6 +216,40 @@ touch "$dest/skills/build/SKILL.md" "$dest/skills/review/SKILL.md"
         result = self.run_installer('--setup')
         self.assertEqual(result.returncode, 1)
         self.assertNotIn('setup must not run', result.stderr)
+
+    def test_hindsight_prepares_isolation_before_native_install_then_activates(self):
+        self.manifest.write_text('https://hermes-agent.nousresearch.com/docs/plugins/hindsight all profiles\n')
+        helper = self.repo / 'install-hindsight.py'
+        helper.write_text('import os,sys\nfrom pathlib import Path\n'
+                         'with Path(os.environ["CALL_LOG"]).open("a") as f: f.write("hindsight|" + "|".join(sys.argv[1:]) + "\\n")\n')
+        config = str(self.root / 'connection file.json')
+        result = self.run_installer('--setup', '--hindsight-config', config)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.calls()
+        preparations = [i for i, c in enumerate(calls) if c.startswith('hindsight|') and '--prepare' in c]
+        activations = [i for i, c in enumerate(calls) if c.startswith('hindsight|') and '--prepare' not in c]
+        installs = [i for i, c in enumerate(calls) if 'plugins install hindsight' in c]
+        self.assertEqual(len(preparations), 1)
+        self.assertEqual(len(activations), 1)
+        self.assertEqual(len(installs), 3)
+        self.assertLess(preparations[0], min(installs))
+        self.assertGreater(activations[0], max(installs))
+        self.assertIn('--config|' + config, calls[preparations[0]])
+
+    def test_hindsight_setup_failure_prevents_activating_unconfigured_memory(self):
+        self.manifest.write_text('https://hermes-agent.nousresearch.com/docs/plugins/hindsight all profiles\n')
+        (self.repo / 'install-hindsight.py').write_text('raise SystemExit(1)\n')
+        result = self.run_installer('--setup')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(any('plugins install hindsight' in c for c in self.calls()))
+
+    def test_hindsight_plain_install_cannot_activate_without_isolated_config(self):
+        self.manifest.write_text('https://hermes-agent.nousresearch.com/docs/plugins/hindsight all profiles\n')
+        (self.repo / 'install-hindsight.py').write_text('raise SystemExit(1)\n')
+        for args in ((), ('--enable',)):
+            result = self.run_installer(*args)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(any('plugins install hindsight' in c for c in self.calls()))
 
     def test_setup_applies_gateway_default_only_where_bundle_is_installed(self):
         self.manifest.write_text('https://hermes-agent.nousresearch.com/docs/plugins/bot-forge default profile only\n')

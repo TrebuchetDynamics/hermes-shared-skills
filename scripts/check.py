@@ -25,6 +25,8 @@ EXCLUSIONS = {
         ('integration', 'requires the optional Hermes loader environment'),
     'tests/integration_bundle.py':
         ('integration', 'requires an existing isolated Hermes installation'),
+    'tests/integration_hindsight.py':
+        ('integration', 'requires installed Hermes and Hindsight; captures SDK calls without server traffic'),
 }
 LIVE_FLAGS = ('CONTAINMENT_LINUX_TESTS', 'RUN_CONTROLLER_BRIDGE_LINUX',
               'HERMES_NATIVE_HANDOFF_TEST')

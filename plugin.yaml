@@ -12,3 +12,4 @@ requires_plugins:
   - bot-forge
   - ponytail
   - hermes-speech
+  - hindsight

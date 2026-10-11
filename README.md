@@ -9,14 +9,15 @@ plugin, and restart Hermes; there is no command list to maintain.
 For a published version that includes `hermes toolset setup`:
 
 Setup is broader than installing this plugin: the current source inventory targets
-all profiles for OMH, Bot Forge, Ponytail, external skills, Graphify, and speech support. Preview with
-`hermes toolset setup --dry-run` before running setup. If the published version
+all profiles for OMH, Bot Forge, Ponytail, external skills, Graphify, speech support,
+and Hindsight memory. On first setup, choose a Hindsight backend as described
+below and pass its connection JSON with `--hindsight-config`. If the published version
 does not yet include setup, use the local checkout instructions below.
 
 ```sh
 hermes plugins install TrebuchetDynamics/hermes-toolset
 hermes plugins enable hermes-toolset
-hermes toolset setup --yes-deps
+hermes toolset setup --yes-deps --hindsight-config /path/to/connection.json
 hermes toolset doctor
 ```
 
@@ -39,12 +40,12 @@ Plugins are enabled per profile. For a named profile, use that profile's home fo
 the link and `hermes -p PROFILE plugins enable hermes-toolset` to enable it.
 `hermes toolset setup` installs and enables the sources in
 [plugins/PLUGINS.md](plugins/PLUGINS.md), including external skill repositories,
-Graphify's Hermes integration, and OMH's full setup. It also links and enables
+Graphify's Hermes integration, OMH's full setup, and Hindsight memory setup. It also links and enables
 hermes-toolset itself in every existing live profile, preserving existing plugin
 installations. After creating another profile, rerun setup or, from this checkout,
 run `bash install-plugins.sh --bundle-only` to add just this bundle and its defaults
 across profiles. The links depend on keeping this checkout installed. It applies
-[our defaults](plugins/defaults.json): preserve existing memory choices, keep the
+[our defaults](plugins/defaults.json): preserve OMH's existing store, keep the
 current TUI, disable the optional menubar, allow toolset gateway injection, and
 set `approvals.mode` to `off` for profiles with hermes-toolset installed. This
 disables terminal command approval prompts throughout those profiles, including
@@ -62,6 +63,68 @@ then restore the desired settings, for example
 It runs OMH doctor after setup. Native Hermes installation has no post-install
 hook, so the setup command is required after installing this repository.
 Use `hermes toolset setup --dry-run` to preview target profiles.
+
+## Hindsight memory per profile
+
+[Hindsight](https://hermes-agent.nousresearch.com/docs/plugins/hindsight) is the
+bundle's long-term memory provider. Setup assigns each profile a unique static
+bank ID and, in embedded mode, a separate daemon/database profile. Names include
+a hash of the profile home so separate Hermes roots cannot accidentally reuse
+the same embedded store. CLI, Telegram, and other channels belonging to one
+profile share that profile's memory. Profiles do not share banks.
+
+New profiles use automatic recall, automatic retention, and `hybrid` mode
+(context injection plus retain/recall/reflect tools). Setup selects Hindsight as
+`memory.provider` and disables built-in MEMORY.md/USER.md injection and the
+built-in memory tool. Existing files and OMH stores are kept; old memories are
+not automatically migrated into Hindsight. The main chat model stays unchanged.
+
+For local embedded memory with Ollama, start from
+[plugins/hindsight.example.json](plugins/hindsight.example.json). Install the
+chosen Ollama model first; the example uses Hindsight's documented `gemma3:12b`
+default. Setup does not download an LLM or choose one silently.
+
+```sh
+hermes toolset setup --yes-deps --hindsight-config plugins/hindsight.example.json --dry-run
+hermes toolset setup --yes-deps --hindsight-config plugins/hindsight.example.json
+```
+
+Other connection-file choices:
+
+- Cloud: `{"mode":"cloud"}`; configure `HINDSIGHT_API_KEY` in each profile's
+  `.env` or secret provider.
+- Existing server: `{"mode":"local_external","api_url":"http://localhost:8888"}`;
+  add profile-specific authentication if that server requires it.
+- Embedded with a hosted LLM: set `mode` to `local_embedded`, `llm_provider`
+  and `llm_model` to supported values, and optionally `llm_base_url`.
+  Configure `HINDSIGHT_LLM_API_KEY` in each profile's `.env` or secret provider.
+
+Connection templates cannot contain credentials. Existing per-profile
+connection settings, tuning, and unique bank IDs are preserved on repeat setup.
+If no connection is configured, setup reports the missing backend instead of
+activating an unconfigured provider. A shared bank, shared embedded daemon,
+dynamic bank template, or cross-bank recall setting must be resolved first;
+setup refuses to redirect existing memories silently.
+Legacy `~/.hindsight/config.json` or environment-based bank routing must first
+be localized to explicit per-profile configurations; setup does not silently
+shadow those existing stores. Isolation preparation also runs for the bare
+installer because native plugin installation can select a memory provider.
+
+To configure only Hindsight after it is installed, use the helper from this
+checkout with an explicit list of profiles:
+
+```sh
+python3 install-hindsight.py --hermes-home "$HOME/.hermes" \
+  --profile default --profile work --config /path/to/connection.json
+hermes -p work memory status
+```
+
+Repeat setup after creating a profile; `--bundle-only` does not configure external
+memory providers. Restart an existing CLI session after changing providers.
+Embedded servers start lazily on first use. `memory status` checks provider
+availability, not a successful server connection or retain/recall cycle; verify
+that cycle with a harmless fact before relying on memory. Banks isolate normal
+plugin routing, not access by someone who controls the shared server or PC.
 
 Hermes may flag the bundled workflow scripts during installation. Review its
 findings; the plain install command can require an explicit scanner override.
@@ -226,6 +289,12 @@ alias, plus the expected-import inventory. Run it with the same Hermes Python
 environment and source `PYTHONPATH`. It exits nonzero for missing or blocked
 imports. Native command registration is inspected; upstream actions, external
 services, and live Telegram delivery are not invoked.
+
+`tests/integration_hindsight.py /path/to/installed/hindsight` uses the same
+Hermes interpreter and source path. It creates temporary profiles, loads the
+real provider, and captures SDK retain/recall calls to verify bank isolation
+and memory-provider diagnostics. It does not start a daemon, contact a server,
+or prove extraction quality from a live model.
 
 From this repository's root, use the installed Hermes interpreter and source
 checkout (adjust `HERMES_SOURCE` if Hermes is installed elsewhere):

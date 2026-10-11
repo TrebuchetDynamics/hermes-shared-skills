@@ -89,6 +89,14 @@ class BundleTests(unittest.TestCase):
         self.assertEqual(args.action, 'doctor')
         self.assertTrue(args.json)
 
+    def test_setup_forwards_hindsight_connection_file(self):
+        parser = argparse.ArgumentParser()
+        self.bundle.setup_parser(parser)
+        args = parser.parse_args(['setup', '--hindsight-config', '/tmp/connection file.json'])
+        with patch.object(self.bundle.subprocess, 'run', return_value=types.SimpleNamespace(returncode=0)) as run:
+            self.assertEqual(self.bundle.handle_cli(args), 0)
+        self.assertEqual(run.call_args.args[0][-2:], ['--hindsight-config', '/tmp/connection file.json'])
+
     def test_missing_imports_track_partial_install_and_removed_commands(self):
         home = Path(self.tmp.name)
         self.bundle.record_skill_repository(home, 'https://github.com/addyosmani/agent-skills', ['alpha', 'beta'])
@@ -113,6 +121,25 @@ class BundleTests(unittest.TestCase):
         with patch.dict('sys.modules', modules):
             report = self.bundle.inventory()
         self.assertIn('bot-forge', report['missing_plugins'])
+
+    def test_hindsight_category_provider_is_not_reported_as_a_disabled_general_plugin(self):
+        self.manager.home_path = Path(self.tmp.name)
+        self.manager.discover_and_load = lambda: None
+        self.manager.list_plugins = lambda: [{'name': 'hindsight', 'kind': 'exclusive',
+            'enabled': False, 'error': 'exclusive plugin — activate via <category>.provider config'}]
+        modules = {
+            'hermes_cli.commands_platforms': types.SimpleNamespace(
+                telegram_menu_commands=lambda **kw: ([], 0), telegram_menu_max_commands=lambda: 100),
+            'agent.skill_commands': types.SimpleNamespace(get_skill_commands=lambda: {}),
+            'hermes_cli.config': types.SimpleNamespace(load_config_readonly=lambda: {'memory': {'provider': 'hindsight'}}),
+            'plugins.memory': types.SimpleNamespace(load_memory_provider=lambda *a, **kw:
+                types.SimpleNamespace(is_available=lambda: True)),
+        }
+        with patch.dict('sys.modules', modules):
+            report = self.bundle.inventory()
+        self.assertNotIn('hindsight', report['missing_plugins'])
+        self.assertIsNone(report['plugins'][0]['error'])
+        self.assertTrue(report['plugins'][0]['memory_provider'])
 
     def report(self):
         return {'plugins': [{'name': 'ponytail', 'version': '5.1.0', 'enabled': True,

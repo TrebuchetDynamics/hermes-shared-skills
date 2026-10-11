@@ -99,7 +99,19 @@ def inventory():
     menu_names = dict(menu)
     for row in rows:
         row['in_telegram_menu'] = row['telegram'] in menu_names
-    selected = [p for p in plugins if p['name'] in wanted]
+    selected = [dict(p) for p in plugins if p['name'] in wanted]
+    for plugin in selected:
+        if plugin['name'] == 'hindsight' and plugin.get('kind') == 'exclusive':
+            # Memory providers have a dedicated loader; the general plugin
+            # manager records them as inactive even when memory.provider selects them.
+            from hermes_cli.config import load_config_readonly
+            from plugins.memory import load_memory_provider
+            active = (load_config_readonly().get('memory') or {}).get('provider') == 'hindsight'
+            provider = load_memory_provider('hindsight', register_skills=False) if active else None
+            available = bool(provider and provider.is_available())
+            plugin.update(memory_provider=True, enabled=active and available,
+                          error=None if active and available else
+                          'Hindsight memory is not selected/available; run hermes memory status and toolset setup.')
     loaded = {p['name'] for p in selected if p.get('enabled') and not p.get('error')}
     required = wanted
     missing_skills, unchecked_sources = missing_skill_imports(
@@ -131,6 +143,8 @@ def list_commands(raw_args=''):
             skills = sum(n.startswith(name + ':') for n in report['plugin_skills'])
             lines.append(f"{name}{version}: {status} — {plugin.get('tools', 0)} tools, "
                          f"{plugin.get('commands', 0)} commands, {skills} skills, {plugin.get('hooks', 0)} hooks")
+            if plugin.get('memory_provider'):
+                lines.append('  Memory capabilities load through memory.provider; server connectivity is not checked here.')
         lines += [f"{len(report['commands'])} available commands across plugins and local/external skills.",
                   'Per-plugin skill counts cover registered plugin skills; OMH workflow skills are loaded separately.',
                   'Counts show registered capabilities, not tools enabled in your current chat.',
@@ -155,6 +169,7 @@ def setup_parser(parser):
     setup.add_argument('--dry-run', action='store_true')
     setup.add_argument('--hermes-home', help='Hermes root containing profiles/')
     setup.add_argument('--yes-deps', action='store_true', help='Consent to declared Python dependencies')
+    setup.add_argument('--hindsight-config', help='Connection-only JSON for new Hindsight profiles')
     doctor = actions.add_parser('doctor', help='Report enabled plugins and available commands')
     doctor.add_argument('--json', action='store_true')
 
@@ -171,6 +186,8 @@ def handle_cli(args):
         argv += ['--hermes-home', args.hermes_home]
     if args.yes_deps:
         argv.append('--yes-deps')
+    if getattr(args, 'hindsight_config', None):
+        argv += ['--hindsight-config', args.hindsight_config]
     return subprocess.run(argv, check=False).returncode
 
 

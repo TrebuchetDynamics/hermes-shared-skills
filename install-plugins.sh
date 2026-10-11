@@ -17,7 +17,9 @@ Existing installs are skipped, never force-replaced. No gateways are restarted.
 --dry-run          Print commands without invoking Hermes or changing profiles.
 --enable           Enable newly installed and already present plugins.
 --yes-deps         Consent to declared Python dependencies on native installs.
---setup            Run OMH setup using plugins/defaults.json after installation.
+--setup            Configure OMH and isolated Hindsight memory using bundle defaults.
+--hindsight-config FILE
+                   Connection-only JSON for new Hindsight profiles (no credentials).
 --bundle-only      Link and enable this bundle in every live profile and apply
                    its defaults, without installing external sources.
 --hermes-home ROOT Select the default Hermes home containing profiles/.
@@ -33,6 +35,7 @@ enable=false
 yes_deps=false
 setup=false
 bundle_only=false
+hindsight_config=''
 hermes_root=${HERMES_HOME:-"$HOME/.hermes"}
 if [[ $(basename -- "$(dirname -- "$hermes_root")") == profiles ]]; then
     hermes_root=$(dirname -- "$(dirname -- "$hermes_root")")
@@ -44,6 +47,9 @@ while (($#)); do
         --yes-deps) yes_deps=true; shift ;;
         --setup) setup=true; shift ;;
         --bundle-only) bundle_only=true; setup=true; shift ;;
+        --hindsight-config)
+            [[ $# -ge 2 && -n $2 ]] || die '--hindsight-config requires a JSON file'
+            hindsight_config=$2; shift 2 ;;
         --hermes-home)
             [[ $# -ge 2 && -n $2 ]] || die '--hermes-home requires a directory'
             hermes_root=$2; shift 2 ;;
@@ -194,6 +200,18 @@ for ((i=0; i<${#plugins[@]}; i++)); do
     source=${sources[i]}
     targets=(default)
     [[ ${scopes[i]} != 'all profiles' ]] || targets=("${profiles[@]}")
+    if [[ $plugin == hindsight ]]; then
+        hindsight_args=(python3 "$script_dir/install-hindsight.py" --hermes-home "$hermes_root")
+        for profile in "${targets[@]}"; do hindsight_args+=(--profile "$profile"); done
+        [[ -z $hindsight_config ]] || hindsight_args+=(--config "$hindsight_config")
+        $dry_run && hindsight_args+=(--dry-run)
+        # Native plugin installation can select memory.provider immediately.
+        # Prepare every isolated bank before any plugin is allowed to activate.
+        if ! "${hindsight_args[@]}" --prepare; then
+            failed=$((failed + 1))
+            continue
+        fi
+    fi
     if [[ ${source,,} == https://github.com/graphify-labs/graphify ]]; then
         helper_args=(python3 "$script_dir/install-graphify.py" --hermes-home "$hermes_root")
         for profile in "${targets[@]}"; do helper_args+=(--profile "$profile"); done
@@ -338,6 +356,11 @@ PY
         for profile in "${targets[@]}"; do helper_args+=(--profile "$profile"); done
         $dry_run && helper_args+=(--dry-run)
         if ! "${helper_args[@]}"; then
+            failed=$((failed + 1))
+        fi
+    fi
+    if $setup && ! $source_failed && [[ $plugin == hindsight ]]; then
+        if ! "${hindsight_args[@]}"; then
             failed=$((failed + 1))
         fi
     fi
